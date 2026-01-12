@@ -50,4 +50,19 @@ class VariantStock extends Model
     {
         return $this->qty < $this->min_stok;
     }
+
+    public function getReorderPointEffAttribute(): ?int
+    {
+        // Prioritas: gunakan kolom 'reorder_point' bila ada, fallback hitung dinamis
+        if (!is_null($this->reorder_point)) return (int)$this->reorder_point;
+
+        // Fallback kalkulasi ringan berdasar histori (lihat service di bawah)
+        return app(\App\Services\StockPlanningService::class)
+            ->estimateReorderPoint($this->gudang_id, $this->product_variant_id);
+    }
+
+    public function scopeBelowRop($q)
+    {
+        return $q->whereColumn('qty', '<=', 'reorder_point');
+    }
 }

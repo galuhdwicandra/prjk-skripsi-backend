@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\ProductMediaController;
 use App\Http\Controllers\Api\VariantStockController;
+use App\Http\Controllers\Api\Inventory\StockLotController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrdersController;
 use App\Http\Controllers\Api\DeliveriesController;
@@ -93,6 +94,8 @@ Route::prefix('v1')->group(function () {
 
         // Stok Gudang
         Route::get('/stocks', [VariantStockController::class, 'index']);
+        Route::get('/stocks/rop', [VariantStockController::class, 'ropList']);
+        Route::post('/stock-lots', [StockLotController::class, 'store']);
         Route::get('/stocks/{stock}', [VariantStockController::class, 'show']);
         Route::post('/stocks', [VariantStockController::class, 'store']);   // set stok awal / upsert
         Route::patch('/stocks/{stock}', [VariantStockController::class, 'update']);  // update min_stok

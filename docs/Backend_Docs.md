@@ -1,6 +1,6 @@
 # Dokumentasi Backend (FULL Source)
 
-_Dihasilkan otomatis: 2025-12-24 00:51:39_  
+_Dihasilkan otomatis: 2025-12-24 04:13:14_  
 **Root:** `/home/galuhdwicandra/projects/clone/project-order/backend`
 
 
@@ -20,6 +20,7 @@ _Dihasilkan otomatis: 2025-12-24 00:51:39_
   - [app/Http/Controllers/Api/FeeEntryController.php](#file-apphttpcontrollersapifeeentrycontrollerphp)
   - [app/Http/Controllers/Api/FiscalPeriodController.php](#file-apphttpcontrollersapifiscalperiodcontrollerphp)
   - [app/Http/Controllers/Api/GudangController.php](#file-apphttpcontrollersapigudangcontrollerphp)
+  - [app/Http/Controllers/Api/Inventory/StockLotController.php](#file-apphttpcontrollersapiinventorystocklotcontrollerphp)
   - [app/Http/Controllers/Api/JournalController.php](#file-apphttpcontrollersapijournalcontrollerphp)
   - [app/Http/Controllers/Api/OrderController.php](#file-apphttpcontrollersapiordercontrollerphp)
   - [app/Http/Controllers/Api/OrdersController.php](#file-apphttpcontrollersapiorderscontrollerphp)
@@ -54,12 +55,15 @@ _Dihasilkan otomatis: 2025-12-24 00:51:39_
   - [app/Models/Order.php](#file-appmodelsorderphp)
   - [app/Models/OrderChangeLog.php](#file-appmodelsorderchangelogphp)
   - [app/Models/OrderItem.php](#file-appmodelsorderitemphp)
+  - [app/Models/OrderItemLotAllocation.php](#file-appmodelsorderitemlotallocationphp)
   - [app/Models/Payment.php](#file-appmodelspaymentphp)
   - [app/Models/Product.php](#file-appmodelsproductphp)
   - [app/Models/ProductMedia.php](#file-appmodelsproductmediaphp)
   - [app/Models/ProductVariant.php](#file-appmodelsproductvariantphp)
   - [app/Models/Receipt.php](#file-appmodelsreceiptphp)
   - [app/Models/Setting.php](#file-appmodelssettingphp)
+  - [app/Models/StockLot.php](#file-appmodelsstocklotphp)
+  - [app/Models/StockMovement.php](#file-appmodelsstockmovementphp)
   - [app/Models/User.php](#file-appmodelsuserphp)
   - [app/Models/VariantStock.php](#file-appmodelsvariantstockphp)
 
@@ -134,6 +138,7 @@ _Dihasilkan otomatis: 2025-12-24 00:51:39_
   - [app/Http/Requests/SettingBulkUpsertRequest.php](#file-apphttprequestssettingbulkupsertrequestphp)
   - [app/Http/Requests/SettingQueryRequest.php](#file-apphttprequestssettingqueryrequestphp)
   - [app/Http/Requests/SettingUpsertRequest.php](#file-apphttprequestssettingupsertrequestphp)
+  - [app/Http/Requests/StockLotStoreRequest.php](#file-apphttprequestsstocklotstorerequestphp)
   - [app/Http/Requests/StoreProductRequest.php](#file-apphttprequestsstoreproductrequestphp)
   - [app/Http/Requests/StoreVariantRequest.php](#file-apphttprequestsstorevariantrequestphp)
   - [app/Http/Requests/UpdateProductRequest.php](#file-apphttprequestsupdateproductrequestphp)
@@ -163,6 +168,7 @@ _Dihasilkan otomatis: 2025-12-24 00:51:39_
   - [app/Services/QuoteService.php](#file-appservicesquoteservicephp)
   - [app/Services/SalesInventoryService.php](#file-appservicessalesinventoryservicephp)
   - [app/Services/SettingService.php](#file-appservicessettingservicephp)
+  - [app/Services/StockPlanningService.php](#file-appservicesstockplanningservicephp)
   - [app/Services/User/UserService.php](#file-appservicesuseruserservicephp)
   - [app/Services/VariantStockService.php](#file-appservicesvariantstockservicephp)
   - [app/Services/XenditService.php](#file-appservicesxenditservicephp)
@@ -1493,6 +1499,80 @@ class GudangController extends Controller
         return response()->json([
             'success' => true,
         ], 204);
+    }
+}
+
+```
+</details>
+
+### app/Http/Controllers/Api/Inventory/StockLotController.php
+
+- SHA: `3d430071ed0f`  
+- Ukuran: 3 KB  
+- Namespace: `App\Http\Controllers\Api\Inventory`
+
+**Class `StockLotController` extends `Controller`**
+
+Metode Publik:
+- **__construct**(private VariantStockService $service)
+- **store**(Request $r)
+<details><summary><strong>Lihat Kode Lengkap</strong></summary>
+
+```php
+<?php
+
+namespace App\Http\Controllers\Api\Inventory;
+
+use App\Http\Controllers\Controller;
+use App\Services\VariantStockService;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+
+class StockLotController extends Controller
+{
+    public function __construct(private VariantStockService $service) {}
+
+    // POST /api/v1/stock-lots
+    public function store(Request $r)
+    {
+        $this->authorize('create', \App\Models\VariantStock::class);
+
+        $v = $r->validate([
+            'cabang_id'          => ['required', 'integer'], // dipakai untuk kontrol akses/logika lain, TIDAK dikirim ke service
+            'gudang_id'          => ['required', 'integer'],
+            'product_variant_id' => ['required', 'integer'],
+            'qty'                => ['required', 'integer', 'min:1'],
+            'lot_no'             => ['nullable', 'string', 'max:100'],
+            'received_at'        => ['required', 'date', 'date_format:Y-m-d'],
+            'expires_at'         => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:received_at'],
+            'unit_cost'          => ['nullable', 'numeric', 'min:0'],
+            'note'               => ['nullable', 'string', 'max:255'],
+            'ref_type'           => ['nullable', 'string', 'max:100'],
+            'ref_id'             => ['nullable', 'string', 'max:100'],
+        ]);
+
+        // Guard ekstra agar kode LOT tidak pernah lolos sebagai tanggal
+        if (is_string($v['received_at']) && str_starts_with($v['received_at'], 'LOT-')) {
+            throw ValidationException::withMessages([
+                'received_at' => ['received_at harus berupa tanggal format YYYY-MM-DD, bukan kode LOT.'],
+            ]);
+        }
+
+        // Panggil service (service sudah mengelola transaksi DB)
+        $lot = $this->service->receiveLot(
+            (int) $v['gudang_id'],          // 1) gudangId
+            (int) $v['product_variant_id'], // 2) variantId
+            (int) $v['qty'],                // 3) qty
+            $v['lot_no'] ?? null,           // 4) lotNo (boleh null → auto-generate di service)
+            $v['received_at'],              // 5) receivedAt (YYYY-MM-DD)
+            $v['expires_at'] ?? null,       // 6) expiresAt (YYYY-MM-DD|null)
+            isset($v['unit_cost']) ? (float) $v['unit_cost'] : null, // 7) unitCost
+            $v['note'] ?? null,             // 8) note
+            $v['ref_type'] ?? null,         // 9) refType
+            $v['ref_id'] ?? null            // 10) refId
+        );
+
+        return response()->json(['data' => $lot], 201);
     }
 }
 
@@ -2844,8 +2924,8 @@ class UserController extends Controller
 
 ### app/Http/Controllers/Api/VariantStockController.php
 
-- SHA: `203e50c86bff`  
-- Ukuran: 4 KB  
+- SHA: `04f897bc8fcd`  
+- Ukuran: 5 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `VariantStockController` extends `Controller`**
@@ -2858,6 +2938,7 @@ Metode Publik:
 - **update**(VariantStockUpdateRequest $request, VariantStock $stock) — GET /api/v1/stocks
 - **adjust**(VariantStockAdjustRequest $request, VariantStock $stock) — GET /api/v1/stocks
 - **destroy**(VariantStock $stock) — GET /api/v1/stocks
+- **ropList**(Request $request) — GET /api/v1/stocks
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
@@ -2889,7 +2970,7 @@ class VariantStockController extends Controller
     {
         $this->authorize('viewAny', VariantStock::class);
 
-        $q = VariantStock::query()->with(['gudang','variant','cabang']);
+        $q = VariantStock::query()->with(['gudang', 'variant', 'cabang']);
 
         if ($request->filled('cabang_id')) {
             $q->where('cabang_id', (int)$request->integer('cabang_id'));
@@ -2905,7 +2986,7 @@ class VariantStockController extends Controller
         }
 
         $perPage = max(1, (int)$request->integer('per_page', 10));
-        $data = $q->orderBy('id','desc')->paginate($perPage);
+        $data = $q->orderBy('id', 'desc')->paginate($perPage);
 
         // tambah flag is_low_stock per item
         $data->getCollection()->transform(function ($row) {
@@ -2922,7 +3003,7 @@ class VariantStockController extends Controller
     public function show(VariantStock $stock)
     {
         $this->authorize('view', $stock);
-        $stock->load(['gudang','variant','cabang']);
+        $stock->load(['gudang', 'variant', 'cabang']);
         $stock->is_low_stock = $stock->qty < $stock->min_stok;
 
         return response()->json([
@@ -3000,6 +3081,39 @@ class VariantStockController extends Controller
         return response()->json([
             'message' => 'Data stok dihapus.'
         ]);
+    }
+
+    public function ropList(Request $request)
+    {
+        $this->authorize('viewAny', VariantStock::class);
+
+        $q = VariantStock::query()->with(['gudang', 'variant', 'cabang']);
+
+        if ($request->filled('gudang_id')) {
+            $q->where('gudang_id', (int)$request->integer('gudang_id'));
+        }
+        if ($request->filled('product_variant_id')) {
+            $q->where('product_variant_id', (int)$request->integer('product_variant_id'));
+        }
+
+        // Ambil semua kandidat, hitung ROP efektif per baris
+        $rows = $q->get();
+
+        $rows->transform(function ($row) {
+            $rop = $row->getAttribute('reorder_point')
+                ?? app(\App\Services\StockPlanningService::class)
+                ->estimateReorderPoint($row->gudang_id, $row->product_variant_id);
+
+            $row->reorder_point_eff = $rop;
+            $row->is_below_rop      = $rop !== null && $row->qty <= $rop;
+            $row->is_low_stock      = $row->qty < $row->min_stok; // tetap sertakan untuk referensi
+
+            return $row;
+        });
+
+        $data = $rows->filter(fn($r) => $r->is_below_rop)->values();
+
+        return response()->json(['data' => $data]);
     }
 }
 
@@ -4191,6 +4305,30 @@ class OrderItem extends Model
 ```
 </details>
 
+### app/Models/OrderItemLotAllocation.php
+
+- SHA: `2ab9380df30c`  
+- Ukuran: 209 B  
+- Namespace: `App\Models`
+
+**Class `OrderItemLotAllocation` extends `Model`**
+<details><summary><strong>Lihat Kode Lengkap</strong></summary>
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class OrderItemLotAllocation extends Model
+{
+    protected $fillable = ['order_item_id', 'stock_lot_id', 'qty_allocated', 'unit_cost'];
+}
+
+```
+</details>
+
 ### app/Models/Payment.php
 
 - SHA: `407ab78b3e21`  
@@ -4560,6 +4698,102 @@ class Setting extends Model
 ```
 </details>
 
+### app/Models/StockLot.php
+
+- SHA: `52a93031ca8c`  
+- Ukuran: 1 KB  
+- Namespace: `App\Models`
+
+**Class `StockLot` extends `Model`**
+
+Metode Publik:
+- **variant**() : *BelongsTo*
+- **gudang**() : *BelongsTo*
+- **cabang**() : *BelongsTo*
+<details><summary><strong>Lihat Kode Lengkap</strong></summary>
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class StockLot extends Model
+{
+    protected $fillable = [
+        'cabang_id',
+        'gudang_id',
+        'product_variant_id',
+        'lot_no',            // simpan "LOT-2025..." di sini bila VARCHAR
+        'received_at',
+        'expires_at',
+        'qty_received',
+        'qty_remaining',
+        'unit_cost',
+    ];
+
+    protected $casts = [
+        'received_at'   => 'datetime',
+        'expires_at'    => 'date',
+        'qty_received'  => 'integer',
+        'qty_remaining' => 'integer',
+        'unit_cost'     => 'decimal:2',
+    ];
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+    public function gudang(): BelongsTo
+    {
+        return $this->belongsTo(Gudang::class, 'gudang_id');
+    }
+    public function cabang(): BelongsTo
+    {
+        return $this->belongsTo(Cabang::class, 'cabang_id');
+    }
+}
+
+```
+</details>
+
+### app/Models/StockMovement.php
+
+- SHA: `764f2adebb18`  
+- Ukuran: 346 B  
+- Namespace: `App\Models`
+
+**Class `StockMovement` extends `Model`**
+<details><summary><strong>Lihat Kode Lengkap</strong></summary>
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class StockMovement extends Model
+{
+    protected $fillable = [
+        'cabang_id',
+        'gudang_id',
+        'product_variant_id',
+        'stock_lot_id',
+        'type',
+        'qty',
+        'unit_cost',
+        'ref_type',
+        'ref_id',
+        'note',
+    ];
+}
+
+```
+</details>
+
 ### app/Models/User.php
 
 - SHA: `42007d99ad50`  
@@ -4659,8 +4893,8 @@ class User extends Authenticatable
 
 ### app/Models/VariantStock.php
 
-- SHA: `19f73772c2d4`  
-- Ukuran: 1 KB  
+- SHA: `cc054eec060b`  
+- Ukuran: 2 KB  
 - Namespace: `App\Models`
 
 **Class `VariantStock` extends `Model`**
@@ -4672,6 +4906,8 @@ Metode Publik:
 - **scopeOfCabang**($q, $cabangId)
 - **scopeLowStock**($q)
 - **getIsLowStockAttribute**() : *bool*
+- **getReorderPointEffAttribute**() : *?int*
+- **scopeBelowRop**($q)
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
@@ -4726,6 +4962,21 @@ class VariantStock extends Model
     public function getIsLowStockAttribute(): bool
     {
         return $this->qty < $this->min_stok;
+    }
+
+    public function getReorderPointEffAttribute(): ?int
+    {
+        // Prioritas: gunakan kolom 'reorder_point' bila ada, fallback hitung dinamis
+        if (!is_null($this->reorder_point)) return (int)$this->reorder_point;
+
+        // Fallback kalkulasi ringan berdasar histori (lihat service di bawah)
+        return app(\App\Services\StockPlanningService::class)
+            ->estimateReorderPoint($this->gudang_id, $this->product_variant_id);
+    }
+
+    public function scopeBelowRop($q)
+    {
+        return $q->whereColumn('qty', '<=', 'reorder_point');
     }
 }
 
@@ -8491,6 +8742,70 @@ class SettingUpsertRequest extends FormRequest
 ```
 </details>
 
+### app/Http/Requests/StockLotStoreRequest.php
+
+- SHA: `7fca46917d1f`  
+- Ukuran: 1 KB  
+- Namespace: `App\Http\Requests`
+
+**Class `StockLotStoreRequest` extends `FormRequest`**
+
+Metode Publik:
+- **authorize**() : *bool*
+- **rules**() : *array*
+<details><summary><strong>Lihat Kode Lengkap</strong></summary>
+
+```php
+<?php
+
+// app/Http/Requests/StockLotStoreRequest.php
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StockLotStoreRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        // sesuaikan policy Anda
+        return $this->user()?->can('create', \App\Models\StockLot::class) ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        // Normalisasi tipe data
+        if ($this->has('received_at')) {
+            $dt = $this->date('received_at'); // Carbon|null
+            if ($dt) $this->merge(['received_at' => $dt->toDateTimeString()]);
+        }
+        if ($this->has('expires_at')) {
+            $d = $this->date('expires_at');
+            if ($d) $this->merge(['expires_at' => $d->toDateString()]);
+        }
+    }
+
+    public function rules(): array
+    {
+        return [
+            'cabang_id'          => ['required', 'integer', 'min:1'],
+            'gudang_id'          => ['required', 'integer', 'min:1'],
+            'product_variant_id' => ['required', 'integer', 'min:1'],
+
+            // Jika kolom lot_no bertipe VARCHAR (rekomendasi)
+            'lot_no'             => ['required', 'string', 'max:50'],
+
+            'received_at'        => ['required', 'date'],
+            'expires_at'         => ['nullable', 'date', 'after_or_equal:received_at'],
+
+            'qty_received'       => ['required', 'integer', 'min:1'],
+            'unit_cost'          => ['nullable', 'numeric', 'min:0'],
+        ];
+    }
+}
+
+```
+</details>
+
 ### app/Http/Requests/StoreProductRequest.php
 
 - SHA: `944ab7702051`  
@@ -9787,8 +10102,8 @@ class CategoryService
 
 ### app/Services/CheckoutService.php
 
-- SHA: `6f3ae8a06c2e`  
-- Ukuran: 14 KB  
+- SHA: `0f379a1ea813`  
+- Ukuran: 13 KB  
 - Namespace: `App\Services`
 
 **Class `CheckoutService`**
@@ -9931,13 +10246,6 @@ class CheckoutService
         });
     }
 
-    /**
-     * Simpan payment ke DB dengan default status per metode:
-     * - CASH / QRIS => SUCCESS (bayar langsung)
-     * - TRANSFER    => PENDING (default), bisa di-override via $p['status']
-     *
-     * Recalculate paid_total dari SUCCESS payments (lebih aman).
-     */
     private function recordPayment(Order $order, array $p): void
     {
         $method = strtoupper((string)($p['method'] ?? ''));
@@ -10052,13 +10360,15 @@ class CheckoutService
             $order->save();
 
             // Kurangi stok di gudang per item (hanya sekali, saat transisi ke PAID)
-            $items = $order->items()->get(['variant_id', 'qty']);
+            $items = $order->items()->get(['id', 'variant_id', 'qty']); // <— tambahkan 'id'
             foreach ($items as $it) {
                 $this->salesInv->deductOnPaid(
-                    gudangId: (int)$order->gudang_id,
-                    variantId: (int)$it->variant_id,
-                    qty: (float)$it->qty,
-                    note: 'SALE#' . $order->kode
+                    gudangId: (int) $order->gudang_id,
+                    variantId: (int) $it->variant_id,
+                    qty: (float) $it->qty,
+                    note: 'SALE#' . (string) $order->kode,
+                    orderItemId: (int) $it->id,              // <— penting untuk FIFO
+                    orderKode: (string) $order->kode
                 );
             }
 
@@ -10067,11 +10377,6 @@ class CheckoutService
         }
     }
 
-    /**
-     * Resolve account mapping dari konfigurasi/setting.
-     * Ganti implementasi ini agar membaca dari Settings modul milikmu (mis. table settings).
-     * Key yang dipakai di sini: acc.cash_id, acc.bank_id, acc.sales_id.
-     */
     private function resolveAccountId(string $key): int
     {
         // Coba baca dari helper global `setting()` jika ada
@@ -10111,13 +10416,6 @@ class CheckoutService
         return $id;
     }
 
-    /**
-     * Buat DRAFT jurnal untuk pembayaran order yang sukses.
-     * Skema default (cash-basis):
-     *   - CASH/QRIS  : Debit Kas,   Kredit Pendapatan
-     *   - TRANSFER   : Debit Bank,  Kredit Pendapatan
-     * Ref: ORDER_PAYMENT (ref_id = payment.id)
-     */
     private function postAccountingForPayment(Order $order, Payment $pay): void
     {
         /** @var AccountingService $acc */
@@ -12407,15 +12705,15 @@ class QuoteService
 
 ### app/Services/SalesInventoryService.php
 
-- SHA: `07e5dcf29911`  
-- Ukuran: 838 B  
+- SHA: `c282e993f587`  
+- Ukuran: 2 KB  
 - Namespace: `App\Services`
 
 **Class `SalesInventoryService`**
 
 Metode Publik:
 - **__construct**(private VariantStockService $stockService)
-- **deductOnPaid**(int $gudangId, int $variantId, float $qty, ?string $note = null) : *void*
+- **deductOnPaid**(int $gudangId, int $variantId, float $qty, ?string $note = null, ?int $orderItemId = null, ?string $orderKode = null, ?int $cabangId = null,) : *void* — Kurangi stok ketika order berstatus PAID.
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
@@ -12429,18 +12727,54 @@ class SalesInventoryService
 {
     public function __construct(private VariantStockService $stockService) {}
 
-    public function deductOnPaid(int $gudangId, int $variantId, float $qty, ?string $note = null): void
-    {
+    /**
+     * Kurangi stok ketika order berstatus PAID.
+     * - Jika $orderItemId diberikan → gunakan FIFO (alokasi lot) via VariantStockService::allocateFifoAndDeduct().
+     * - Jika tidak → fallback ke penyesuaian agregat (compat lama).
+     *
+     * @param int         $gudangId
+     * @param int         $variantId
+     * @param float       $qty
+     * @param string|null $note         Contoh: 'SALE#INV-001'
+     * @param int|null    $orderItemId  Wajib untuk FIFO + jejak alokasi lot
+     * @param string|null $orderKode    Opsional, untuk catatan ledger (ex: INV-001)
+     * @param int|null    $cabangId     Opsional; jika null akan diambil dari gudang
+     */
+    public function deductOnPaid(
+        int $gudangId,
+        int $variantId,
+        float $qty,
+        ?string $note = null,
+        ?int $orderItemId = null,
+        ?string $orderKode = null,
+        ?int $cabangId = null,
+    ): void {
         // turunkan ke integer jika stok integral di tabel kamu
         $amount = (int) ceil($qty);
-        // gunakan adjust('decrease') agar tidak minus
+
+        // Jika ada konteks item order → gunakan FIFO + alokasi lot
+        if ($orderItemId !== null) {
+            $this->stockService->allocateFifoAndDeduct(
+                gudangId: $gudangId,
+                variantId: $variantId,
+                orderItemId: $orderItemId,
+                qty: $amount,
+                note: $note ?? ($orderKode ? ('SALE#' . $orderKode) : 'SALE'),
+                refType: 'SALE',
+                refId: (string) $orderItemId,
+                cabangId: $cabangId, // jika null, service akan resolve dari gudang
+            );
+            return;
+        }
+
+        // Fallback legacy: hanya adjust agregat (tanpa jejak lot)
         $stock = \App\Models\VariantStock::query()
             ->where('gudang_id', $gudangId)
             ->where('product_variant_id', $variantId)
             ->firstOrFail();
 
-        $this->stockService->adjust($stock, 'decrease', $amount, $note ?? 'SALE');
-        // (lanjutan ideal): tulis StockMove direction=OUT reason=SALE (lihat ERD) :contentReference[oaicite:12]{index=12}
+        $this->stockService->adjust($stock, 'decrease', $amount, $note ?? ($orderKode ? ('SALE#' . $orderKode) : 'SALE'));
+        // Catatan: jejak ledger OUT + lot allocation tidak dibuat pada fallback ini.
     }
 }
 
@@ -12600,6 +12934,69 @@ class SettingService
 ```
 </details>
 
+### app/Services/StockPlanningService.php
+
+- SHA: `47984b6fa455`  
+- Ukuran: 1 KB  
+- Namespace: `App\Services`
+
+**Class `StockPlanningService`**
+
+Metode Publik:
+- **estimateReorderPoint**(int $gudangId, int $variantId, int $lookbackDays = 30) : *?int* — Estimasi ROP sederhana:
+<details><summary><strong>Lihat Kode Lengkap</strong></summary>
+
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+
+class StockPlanningService
+{
+    /**
+     * Estimasi ROP sederhana:
+     * ROP = ceil(AvgDailyDemand * lead_time_days) + (safety_stock ?: 0)
+     * AvgDailyDemand dari histori 30 hari terakhir pada gudang+variant.
+     */
+    public function estimateReorderPoint(int $gudangId, int $variantId, int $lookbackDays = 30): ?int
+    {
+        $from = Carbon::now()->subDays($lookbackDays)->startOfDay();
+        $to   = Carbon::now()->endOfDay();
+
+        // Ambil qty terjual dari order_items join orders (status PAID) pada gudang tsb
+        $sold = (int) DB::table('order_items as oi')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->where('o.gudang_id', $gudangId)
+            ->where('oi.variant_id', $variantId)
+            ->where('o.status', 'PAID')
+            ->whereBetween('o.paid_at', [$from, $to])
+            ->sum('oi.qty');
+
+        $days = max(1, $lookbackDays);
+        $avgDaily = $sold / $days;
+
+        $vs = DB::table('variant_stocks')
+            ->where('gudang_id', $gudangId)
+            ->where('product_variant_id', $variantId)
+            ->first();
+
+        $lt = (int) ($vs->lead_time_days ?? 0);
+        $ss = (int) ($vs->safety_stock ?? 0);
+
+        if ($lt <= 0 && $ss <= 0 && $avgDaily <= 0) {
+            return null; // tidak cukup data
+        }
+
+        return (int) ceil(($avgDaily * max(0, $lt)) + max(0, $ss));
+    }
+}
+
+```
+</details>
+
 ### app/Services/User/UserService.php
 
 - SHA: `a59d067e22f9`  
@@ -12698,8 +13095,8 @@ class UserService
 
 ### app/Services/VariantStockService.php
 
-- SHA: `d34ea7e3c532`  
-- Ukuran: 3 KB  
+- SHA: `63adbe40b5a9`  
+- Ukuran: 11 KB  
 - Namespace: `App\Services`
 
 **Class `VariantStockService`**
@@ -12709,6 +13106,8 @@ Metode Publik:
 - **adjust**(VariantStock $stock, string $type, int $amount, ?string $note = null) : *VariantStock* — Set stok awal (upsert unik per gudang+variant).
 - **updateMinStok**(VariantStock $stock, int $minStok) : *VariantStock* — Set stok awal (upsert unik per gudang+variant).
 - **ensureUniquenessAndSync**(VariantStock $stock) : *void* — Set stok awal (upsert unik per gudang+variant).
+- **receiveLot**(int $gudangId, int $variantId, int $qty, ?string $lotNo = null, string|\DateTimeInterface|null $receivedAt = null, // 'Y-m-d' atau timestamp string|\DateTimeInterface|null $expiresAt = null, // 'Y-m-d' (opsional) — Set stok awal (upsert unik per gudang+variant).
+- **allocateFifoAndDeduct**(int $gudangId, int $variantId, int $orderItemId, int $qty, ?string $note = null, ?string $refType = 'SALE', ?string $refId = null, ?int $cabangId = null, // opsional; jika null akan diambil dari gudang) : *void* — Set stok awal (upsert unik per gudang+variant).
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
@@ -12720,6 +13119,12 @@ use App\Models\VariantStock;
 use App\Models\Gudang;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\StockLot;
+use App\Models\StockMovement;
+use App\Models\OrderItemLotAllocation;
+use RuntimeException;
+use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class VariantStockService
 {
@@ -12805,6 +13210,214 @@ class VariantStockService
             throw new \RuntimeException('Data stok duplikat untuk gudang & varian yang sama.');
         }
     }
+
+    /**
+     * Penerimaan stok ke lot baru (IN) + update agregat + ledger.
+     */
+    public function receiveLot(
+        int $gudangId,
+        int $variantId,
+        int $qty,
+        ?string $lotNo = null,
+        string|\DateTimeInterface|null $receivedAt = null, // 'Y-m-d' atau timestamp
+        string|\DateTimeInterface|null $expiresAt = null,  // 'Y-m-d' (opsional)
+        ?float $unitCost = null,
+        ?string $note = null,
+        ?string $refType = null,
+        ?string $refId = null
+    ): StockLot {
+        return DB::transaction(function () use (
+            $gudangId,
+            $variantId,
+            $qty,
+            $lotNo,
+            $receivedAt,
+            $expiresAt,
+            $unitCost,
+            $note,
+            $refType,
+            $refId
+        ) {
+            if ($qty <= 0) {
+                throw new RuntimeException('Qty penerimaan harus > 0');
+            }
+
+            // 1) Ambil gudang & cabang
+            $gudang = Gudang::query()->with('cabang')->findOrFail($gudangId);
+
+            // 2) Lock baris stok agregat per (gudang, variant)
+            /** @var VariantStock|null $stock */
+            $stock = VariantStock::query()
+                ->where('gudang_id', $gudang->id)
+                ->where('product_variant_id', $variantId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$stock) {
+                $stock = new VariantStock([
+                    'gudang_id'          => $gudang->id,
+                    'product_variant_id' => $variantId,
+                    'cabang_id'          => $gudang->cabang_id,
+                    'qty'                => 0,
+                    'min_stok'           => 0,
+                ]);
+                $stock->save();
+                // baris baru yang baru dibuat tidak perlu di-lock ulang
+            }
+
+            // 3) Normalisasi tanggal (422 bila invalid)
+            try {
+                $received = $receivedAt ? Carbon::parse($receivedAt) : now();
+            } catch (\Throwable $e) {
+                throw ValidationException::withMessages([
+                    'received_at' => ['Format tanggal tidak valid. Gunakan YYYY-MM-DD.'],
+                ]);
+            }
+
+            $expires = null;
+            if ($expiresAt !== null) {
+                try {
+                    $expires = Carbon::parse($expiresAt)->toDateString();
+                } catch (\Throwable $e) {
+                    throw ValidationException::withMessages([
+                        'expires_at' => ['Format tanggal tidak valid. Gunakan YYYY-MM-DD.'],
+                    ]);
+                }
+            }
+
+            // 4) Auto-generate lot_no bila kosong
+            if ($lotNo === null || trim($lotNo) === '') {
+                // Contoh pola: LOT-YYYYMMDD-G<gudang>-<4digit>
+                $lotNo = sprintf('LOT-%s-G%02d-%04d', now()->format('Ymd'), $gudang->id, random_int(0, 9999));
+            }
+
+            // 5) Update agregat
+            $stock->qty += (int) $qty;
+            $stock->save();
+
+            // 6) Buat layer lot
+            $lot = StockLot::create([
+                'cabang_id'          => $gudang->cabang_id,
+                'gudang_id'          => $gudang->id,
+                'product_variant_id' => $variantId,
+                'lot_no'             => $lotNo,
+                'received_at'        => $received,   // Carbon instance → aman untuk pgsql
+                'expires_at'         => $expires,    // 'Y-m-d' atau null
+                'qty_received'       => (int) $qty,
+                'qty_remaining'      => (int) $qty,
+                'unit_cost'          => $unitCost,
+                // jika StockLot tidak punya kolom 'note/ref_type/ref_id', jangan set di sini
+            ]);
+
+            // 7) Ledger IN
+            StockMovement::create([
+                'cabang_id'          => $gudang->cabang_id,
+                'gudang_id'          => $gudang->id,
+                'product_variant_id' => $variantId,
+                'stock_lot_id'       => $lot->id,
+                'type'               => 'IN',
+                'qty'                => (int) $qty,     // positif untuk IN
+                'unit_cost'          => $unitCost,
+                'ref_type'           => $refType,
+                'ref_id'             => $refId,
+                'note'               => $note ?? 'RECEIVE',
+            ]);
+
+            return $lot;
+        });
+    }
+
+    /**
+     * Pengeluaran stok per FIFO ketika penjualan dibayar.
+     * Membuat alokasi lot untuk audit & COGS.
+     */
+    public function allocateFifoAndDeduct(
+        int $gudangId,
+        int $variantId,
+        int $orderItemId,
+        int $qty,
+        ?string $note = null,
+        ?string $refType = 'SALE',
+        ?string $refId = null,
+        ?int $cabangId = null, // opsional; jika null akan diambil dari gudang
+    ): void {
+        DB::transaction(function () use ($gudangId, $variantId, $orderItemId, $qty, $note, $refType, $refId, $cabangId) {
+            if ($qty <= 0) {
+                throw new RuntimeException('Qty keluaran harus > 0');
+            }
+
+            // Pastikan cabang_id
+            if ($cabangId === null) {
+                $gudang = Gudang::query()->with('cabang')->findOrFail($gudangId);
+                $cabangId = (int) $gudang->cabang_id;
+            }
+
+            // Ambil lot tertua (received_at ASC, fallback created_at ASC)
+            $lots = StockLot::query()
+                ->where('gudang_id', $gudangId)
+                ->where('product_variant_id', $variantId)
+                ->where('qty_remaining', '>', 0)
+                ->orderByRaw('COALESCE(received_at, created_at) ASC, id ASC')
+                ->lockForUpdate()
+                ->get();
+
+            $remain = (int) $qty;
+
+            foreach ($lots as $lot) {
+                if ($remain <= 0) break;
+
+                $take = min($remain, (int)$lot->qty_remaining);
+                if ($take <= 0) continue;
+
+                // Kurangi sisa lot
+                $lot->qty_remaining -= $take;
+                $lot->save();
+
+                // Ledger OUT (qty negatif)
+                StockMovement::create([
+                    'cabang_id' => $cabangId,
+                    'gudang_id' => $gudangId,
+                    'product_variant_id' => $variantId,
+                    'stock_lot_id' => $lot->id,
+                    'type' => 'OUT',
+                    'qty' => -$take,
+                    'unit_cost' => $lot->unit_cost,
+                    'ref_type' => $refType,
+                    'ref_id' => $refId ?? (string)$orderItemId,
+                    'note' => $note ?? 'SALE',
+                ]);
+
+                // Jejak alokasi lot ke item order
+                OrderItemLotAllocation::create([
+                    'order_item_id' => $orderItemId,
+                    'stock_lot_id' => $lot->id,
+                    'qty_allocated' => $take,
+                    'unit_cost' => $lot->unit_cost,
+                ]);
+
+                $remain -= $take;
+            }
+
+            if ($remain > 0) {
+                throw new RuntimeException('Stok tidak mencukupi per FIFO (lot habis).');
+            }
+
+        // Turunkan agregat variant_stocks
+            /** @var VariantStock $stock */
+            $stock = VariantStock::query()
+                ->where('gudang_id', $gudangId)
+                ->where('product_variant_id', $variantId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($stock->qty < (int)$qty) {
+                throw new RuntimeException('Stok agregat kurang (inkonsisten).');
+            }
+
+            $stock->qty -= (int)$qty;
+            $stock->save();
+        });
+    }
 }
 
 ```
@@ -12884,7 +13497,7 @@ class XenditService
 
 ## routes/api.php
 
-- SHA: `38ddc24cfe21`  
+- SHA: `44ca73f7c880`  
 - Ukuran: 12 KB
 
 **Ringkasan Routes (deteksi heuristik):**
@@ -12937,6 +13550,8 @@ class XenditService
 | POST | `/products/{product}/media/reorder` | `ProductMediaController` | `reorder` |
 | DELETE | `/products/{product}/media/{media}` | `ProductMediaController` | `destroy` |
 | GET | `/stocks` | `VariantStockController` | `index` |
+| GET | `/stocks/rop` | `VariantStockController` | `ropList` |
+| POST | `/stock-lots` | `StockLotController` | `store` |
 | GET | `/stocks/{stock}` | `VariantStockController` | `show` |
 | POST | `/stocks` | `VariantStockController` | `store` |
 | PATCH | `/stocks/{stock}` | `VariantStockController` | `update` |
@@ -13024,6 +13639,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\ProductMediaController;
 use App\Http\Controllers\Api\VariantStockController;
+use App\Http\Controllers\Api\Inventory\StockLotController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrdersController;
 use App\Http\Controllers\Api\DeliveriesController;
@@ -13107,6 +13723,8 @@ Route::prefix('v1')->group(function () {
 
         // Stok Gudang
         Route::get('/stocks', [VariantStockController::class, 'index']);
+        Route::get('/stocks/rop', [VariantStockController::class, 'ropList']);
+        Route::post('/stock-lots', [StockLotController::class, 'store']);
         Route::get('/stocks/{stock}', [VariantStockController::class, 'show']);
         Route::post('/stocks', [VariantStockController::class, 'store']);   // set stok awal / upsert
         Route::patch('/stocks/{stock}', [VariantStockController::class, 'update']);  // update min_stok

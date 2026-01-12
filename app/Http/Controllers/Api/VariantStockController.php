@@ -26,7 +26,7 @@ class VariantStockController extends Controller
     {
         $this->authorize('viewAny', VariantStock::class);
 
-        $q = VariantStock::query()->with(['gudang','variant','cabang']);
+        $q = VariantStock::query()->with(['gudang', 'variant', 'cabang']);
 
         if ($request->filled('cabang_id')) {
             $q->where('cabang_id', (int)$request->integer('cabang_id'));
@@ -42,7 +42,7 @@ class VariantStockController extends Controller
         }
 
         $perPage = max(1, (int)$request->integer('per_page', 10));
-        $data = $q->orderBy('id','desc')->paginate($perPage);
+        $data = $q->orderBy('id', 'desc')->paginate($perPage);
 
         // tambah flag is_low_stock per item
         $data->getCollection()->transform(function ($row) {
@@ -59,7 +59,7 @@ class VariantStockController extends Controller
     public function show(VariantStock $stock)
     {
         $this->authorize('view', $stock);
-        $stock->load(['gudang','variant','cabang']);
+        $stock->load(['gudang', 'variant', 'cabang']);
         $stock->is_low_stock = $stock->qty < $stock->min_stok;
 
         return response()->json([
@@ -137,5 +137,38 @@ class VariantStockController extends Controller
         return response()->json([
             'message' => 'Data stok dihapus.'
         ]);
+    }
+
+    public function ropList(Request $request)
+    {
+        $this->authorize('viewAny', VariantStock::class);
+
+        $q = VariantStock::query()->with(['gudang', 'variant', 'cabang']);
+
+        if ($request->filled('gudang_id')) {
+            $q->where('gudang_id', (int)$request->integer('gudang_id'));
+        }
+        if ($request->filled('product_variant_id')) {
+            $q->where('product_variant_id', (int)$request->integer('product_variant_id'));
+        }
+
+        // Ambil semua kandidat, hitung ROP efektif per baris
+        $rows = $q->get();
+
+        $rows->transform(function ($row) {
+            $rop = $row->getAttribute('reorder_point')
+                ?? app(\App\Services\StockPlanningService::class)
+                ->estimateReorderPoint($row->gudang_id, $row->product_variant_id);
+
+            $row->reorder_point_eff = $rop;
+            $row->is_below_rop      = $rop !== null && $row->qty <= $rop;
+            $row->is_low_stock      = $row->qty < $row->min_stok; // tetap sertakan untuk referensi
+
+            return $row;
+        });
+
+        $data = $rows->filter(fn($r) => $r->is_below_rop)->values();
+
+        return response()->json(['data' => $data]);
     }
 }

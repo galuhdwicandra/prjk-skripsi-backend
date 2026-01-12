@@ -129,13 +129,6 @@ class CheckoutService
         });
     }
 
-    /**
-     * Simpan payment ke DB dengan default status per metode:
-     * - CASH / QRIS => SUCCESS (bayar langsung)
-     * - TRANSFER    => PENDING (default), bisa di-override via $p['status']
-     *
-     * Recalculate paid_total dari SUCCESS payments (lebih aman).
-     */
     private function recordPayment(Order $order, array $p): void
     {
         $method = strtoupper((string)($p['method'] ?? ''));
@@ -250,13 +243,15 @@ class CheckoutService
             $order->save();
 
             // Kurangi stok di gudang per item (hanya sekali, saat transisi ke PAID)
-            $items = $order->items()->get(['variant_id', 'qty']);
+            $items = $order->items()->get(['id', 'variant_id', 'qty']); // <— tambahkan 'id'
             foreach ($items as $it) {
                 $this->salesInv->deductOnPaid(
-                    gudangId: (int)$order->gudang_id,
-                    variantId: (int)$it->variant_id,
-                    qty: (float)$it->qty,
-                    note: 'SALE#' . $order->kode
+                    gudangId: (int) $order->gudang_id,
+                    variantId: (int) $it->variant_id,
+                    qty: (float) $it->qty,
+                    note: 'SALE#' . (string) $order->kode,
+                    orderItemId: (int) $it->id,              // <— penting untuk FIFO
+                    orderKode: (string) $order->kode
                 );
             }
 
@@ -265,11 +260,6 @@ class CheckoutService
         }
     }
 
-    /**
-     * Resolve account mapping dari konfigurasi/setting.
-     * Ganti implementasi ini agar membaca dari Settings modul milikmu (mis. table settings).
-     * Key yang dipakai di sini: acc.cash_id, acc.bank_id, acc.sales_id.
-     */
     private function resolveAccountId(string $key): int
     {
         // Coba baca dari helper global `setting()` jika ada
@@ -309,13 +299,6 @@ class CheckoutService
         return $id;
     }
 
-    /**
-     * Buat DRAFT jurnal untuk pembayaran order yang sukses.
-     * Skema default (cash-basis):
-     *   - CASH/QRIS  : Debit Kas,   Kredit Pendapatan
-     *   - TRANSFER   : Debit Bank,  Kredit Pendapatan
-     * Ref: ORDER_PAYMENT (ref_id = payment.id)
-     */
     private function postAccountingForPayment(Order $order, Payment $pay): void
     {
         /** @var AccountingService $acc */
