@@ -167,12 +167,12 @@ class CashService
         });
     }
 
-    public function getOrOpenSessionForHolder(int $holderId): CashSession
+    public function getOrOpenSession(int $cashierId, int $cabangId): \App\Models\CashSession
     {
-        return DB::transaction(function () use ($holderId) {
-            /** @var \App\Models\CashSession|null $open */
-            $open = CashSession::lockForUpdate()
-                ->where('holder_id', $holderId)
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($cashierId, $cabangId) {
+            $open = \App\Models\CashSession::lockForUpdate()
+                ->where('cashier_id', $cashierId)
+                ->where('cabang_id', $cabangId)
                 ->where('status', 'OPEN')
                 ->latest('id')
                 ->first();
@@ -181,15 +181,16 @@ class CashService
                 return $open;
             }
 
-            $session = new CashSession([
-                'holder_id' => $holderId,
-                'status'    => 'OPEN',
+            $session = new \App\Models\CashSession([
+                'cabang_id' => $cabangId,
+                'cashier_id' => $cashierId,
+                'opening_amount' => 0,
+                'status' => 'OPEN',
                 'opened_at' => now(),
-                'opened_by' => Auth::id(),
+                'opened_by' => \Illuminate\Support\Facades\Auth::id(),
             ]);
             $session->save();
 
-            // audit
             $this->audit('OPEN_SESSION', 'cash_sessions', $session->id, [
                 'after' => $session->toArray(),
             ]);
