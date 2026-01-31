@@ -15,10 +15,9 @@ class UploadProductMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // allow EITHER files[] array OR single file
-            'file'     => ['sometimes', 'image', 'max:5120'], // 5MB
-            'files'    => ['sometimes', 'array', 'min:1', 'max:10'],
-            'files.*'  => ['file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
+            'file'    => ['sometimes', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'files'   => ['sometimes', 'array', 'min:1', 'max:10'],
+            'files.*' => ['file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

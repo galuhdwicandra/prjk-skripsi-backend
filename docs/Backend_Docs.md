@@ -1,6 +1,6 @@
 # Dokumentasi Backend (FULL Source)
 
-_Dihasilkan otomatis: 2026-01-31 16:20:17_  
+_Dihasilkan otomatis: 2026-01-31 17:13:52_  
 **Root:** `/home/galuhdwicandra/workspace/clone_prime/backend`
 
 
@@ -9002,8 +9002,8 @@ class UpdateVariantRequest extends FormRequest
 
 ### app/Http/Requests/UploadProductMediaRequest.php
 
-- SHA: `02778dd2d0b9`  
-- Ukuran: 661 B  
+- SHA: `b1378d556cb3`  
+- Ukuran: 602 B  
 - Namespace: `App\Http\Requests`
 
 **Class `UploadProductMediaRequest` extends `FormRequest`**
@@ -9031,10 +9031,9 @@ class UploadProductMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // allow EITHER files[] array OR single file
-            'file'     => ['sometimes', 'image', 'max:5120'], // 5MB
-            'files'    => ['sometimes', 'array', 'min:1', 'max:10'],
-            'files.*'  => ['file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
+            'file'    => ['sometimes', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'files'   => ['sometimes', 'array', 'min:1', 'max:10'],
+            'files.*' => ['file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }
