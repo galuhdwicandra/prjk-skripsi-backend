@@ -1,6 +1,6 @@
 # Dokumentasi Backend (FULL Source)
 
-_Dihasilkan otomatis: 2026-01-31 17:13:52_  
+_Dihasilkan otomatis: 2026-01-31 21:59:59_  
 **Root:** `/home/galuhdwicandra/workspace/clone_prime/backend`
 
 
@@ -2190,8 +2190,8 @@ class OrdersController extends Controller
 
 ### app/Http/Controllers/Api/PaymentWebhookController.php
 
-- SHA: `caac01c8a834`  
-- Ukuran: 2 KB  
+- SHA: `81893c952649`  
+- Ukuran: 3 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `PaymentWebhookController` extends `Controller`**
@@ -2212,6 +2212,7 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Payment;
 use App\Models\Order;
 use Carbon\Carbon;
+use App\Services\SalesInventoryService;
 
 class PaymentWebhookController extends Controller
 {
@@ -2253,17 +2254,40 @@ class PaymentWebhookController extends Controller
                 $payment->payload_json = $payload;
                 $payment->save();
 
+                // ✅ simpan status sebelumnya untuk cegah potong stok dua kali
+                $wasPaid = ($order->status === 'PAID');
+
                 // akumulasi ke order
                 $order->paid_total = (float) $order->paid_total + (float) $payment->amount;
+
                 if ($order->paid_total >= $order->grand_total) {
-                    $order->status = 'PAID';
+                    $order->status  = 'PAID';
                     $order->paid_at = Carbon::now();
+                    $order->save();
+
+                    // ✅ POTONG STOK: hanya saat transisi UNPAID -> PAID
+                    if (!$wasPaid) {
+                        /** @var SalesInventoryService $salesInv */
+                        $salesInv = app(SalesInventoryService::class);
+
+                        $items = $order->items()->get(['id', 'variant_id', 'qty']);
+                        foreach ($items as $it) {
+                            $salesInv->deductOnPaid(
+                                gudangId: (int) $order->gudang_id,
+                                variantId: (int) $it->variant_id,
+                                qty: (float) $it->qty,
+                                note: 'SALE#' . (string) $order->kode,
+                                orderItemId: (int) $it->id,
+                                orderKode: (string) $order->kode
+                            );
+                        }
+                    }
                 } else {
                     $order->status = 'UNPAID';
+                    $order->save();
                 }
-                $order->save();
             } elseif (in_array($status, ['EXPIRED', 'VOID', 'FAILED'], true)) {
-                $payment->status   = $status === 'FAILED' ? 'FAILED' : 'FAILED';
+                $payment->status   = 'FAILED';
                 $payment->payload_json = $payload;
                 $payment->save();
             }
@@ -12443,7 +12467,7 @@ class ProductMediaService
 
 ### app/Services/Products/ProductService.php
 
-- SHA: `b2e8b3756d0b`  
+- SHA: `016f1c5f700e`  
 - Ukuran: 5 KB  
 - Namespace: `App\Services\Products`
 
@@ -12475,8 +12499,12 @@ class ProductService
     public function list(?string $search = null, int $perPage = 24, ?bool $onlyActive = true)
     {
         return Product::query()
-            ->when($onlyActive, fn($q) => $q->active())     // 🔹 default: hanya produk aktif
+            ->when($onlyActive, fn($q) => $q->active())
             ->withCount('variants')
+            ->withMin(
+                ['variants as min_variant_harga' => fn($q) => $q->where('is_active', true)],
+                'harga'
+            )
             ->with(['primaryMedia:id,product_id,path,is_primary,sort_order'])
             ->search($search)
             ->orderByDesc('id')
