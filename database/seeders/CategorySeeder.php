@@ -11,7 +11,7 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         $defaults = [
-            'Cake', 'Cookies', 'Brownies', 'Pudding', 'Snack Box'
+            'Yummy Class', 'Tasty Class', 'Flavourful Class', 'Tube Class'
         ];
 
         foreach ($defaults as $nama) {
