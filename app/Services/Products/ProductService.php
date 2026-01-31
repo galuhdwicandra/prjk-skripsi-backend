@@ -13,8 +13,12 @@ class ProductService
     public function list(?string $search = null, int $perPage = 24, ?bool $onlyActive = true)
     {
         return Product::query()
-            ->when($onlyActive, fn($q) => $q->active())     // 🔹 default: hanya produk aktif
+            ->when($onlyActive, fn($q) => $q->active())
             ->withCount('variants')
+            ->withMin(
+                ['variants as min_variant_harga' => fn($q) => $q->where('is_active', true)],
+                'harga'
+            )
             ->with(['primaryMedia:id,product_id,path,is_primary,sort_order'])
             ->search($search)
             ->orderByDesc('id')
