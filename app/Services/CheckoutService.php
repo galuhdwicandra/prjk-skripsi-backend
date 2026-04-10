@@ -12,6 +12,7 @@ use InvalidArgumentException;
 use App\Services\FeeService;
 use App\Services\AccountingService;
 use Illuminate\Support\Facades\Config;
+use App\Models\CashHolder;
 
 class CheckoutService
 {
@@ -177,9 +178,15 @@ class CheckoutService
                 : ($p['payload_json'] ?? [])
             );
 
-        $resolvedHolderId = $p['holder_id'] ?? ($payloadExtra['holder_id'] ?? $order->cashier_id);
-        if ($resolvedHolderId) {
-            $payloadExtra['holder_id'] = (int) $resolvedHolderId;
+        $resolvedHolderId = (int) ($p['holder_id'] ?? ($payloadExtra['holder_id'] ?? 0));
+
+        if ($resolvedHolderId <= 0) {
+            // default: holder pertama untuk cabang order (atau sesuai rule Anda)
+            $resolvedHolderId = (int) (CashHolder::where('cabang_id', $order->cabang_id)->orderBy('id')->value('id') ?? 0);
+        }
+
+        if ($resolvedHolderId > 0) {
+            $payloadExtra['holder_id'] = $resolvedHolderId;
         }
 
         $pay = new Payment();
@@ -201,13 +208,20 @@ class CheckoutService
             $cashierId = (int) $order->cashier_id;
             if ($cashierId > 0) {
                 $cash = app(\App\Services\CashService::class);
+
+                // ambil holder_id yang sudah Anda simpan ke payload_json
+                $extra = is_array($pay->payload_json) ? $pay->payload_json : [];
+                $holderId = (int) ($extra['holder_id'] ?? 0);
+
                 $session = $cash->getOrOpenSession($cashierId, (int) $order->cabang_id);
+
                 $cash->mirrorPaymentToSession(
                     $session,
                     (float) $pay->amount,
                     'ORDER',
                     (int) $pay->id,
-                    'ORDER#' . $order->kode
+                    'ORDER#' . $order->kode,
+                    $holderId > 0 ? $holderId : null
                 );
             }
         }

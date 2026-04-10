@@ -1,6 +1,6 @@
 # Dokumentasi Backend (FULL Source)
 
-_Dihasilkan otomatis: 2026-01-31 21:59:59_  
+_Dihasilkan otomatis: 2026-04-10 10:02:01_  
 **Root:** `/home/galuhdwicandra/workspace/clone_prime/backend`
 
 
@@ -163,6 +163,7 @@ _Dihasilkan otomatis: 2026-01-31 21:59:59_
   - [app/Services/FeeService.php](#file-appservicesfeeservicephp)
   - [app/Services/GudangService.php](#file-appservicesgudangservicephp)
   - [app/Services/OrderService.php](#file-appservicesorderservicephp)
+  - [app/Services/OrderSettlementService.php](#file-appservicesordersettlementservicephp)
   - [app/Services/Products/ProductMediaService.php](#file-appservicesproductsproductmediaservicephp)
   - [app/Services/Products/ProductService.php](#file-appservicesproductsproductservicephp)
   - [app/Services/QuoteService.php](#file-appservicesquoteservicephp)
@@ -2190,8 +2191,8 @@ class OrdersController extends Controller
 
 ### app/Http/Controllers/Api/PaymentWebhookController.php
 
-- SHA: `81893c952649`  
-- Ukuran: 3 KB  
+- SHA: `bd858f406c54`  
+- Ukuran: 2 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `PaymentWebhookController` extends `Controller`**
@@ -2212,15 +2213,14 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Payment;
 use App\Models\Order;
 use Carbon\Carbon;
-use App\Services\SalesInventoryService;
+use App\Services\OrderSettlementService;
 
 class PaymentWebhookController extends Controller
 {
     public function invoice(Request $req)
     {
-        // Validasi token sederhana (Xendit mengirim X-Callback-Token bila diaktifkan)
         $expected = (string) env('XENDIT_CALLBACK_TOKEN');
-        $token = (string) $req->header('X-Callback-Token', '');
+        $token    = (string) $req->header('X-Callback-Token', '');
 
         if ($expected !== '' && !hash_equals($expected, $token)) {
             abort(403, 'Invalid callback token');
@@ -2235,61 +2235,31 @@ class PaymentWebhookController extends Controller
         }
 
         return DB::transaction(function () use ($status, $extId, $payload) {
-            /** @var Payment|null $payment */
             $payment = Payment::lockForUpdate()
                 ->where('method', 'XENDIT')
                 ->where('ref_no', $extId)
                 ->first();
 
-            if (!$payment) {
-                abort(404, 'Payment not found');
-            }
+            if (!$payment) abort(404, 'Payment not found');
 
-            /** @var Order $order */
             $order = Order::lockForUpdate()->findOrFail($payment->order_id);
 
             if ($status === 'PAID') {
-                $payment->status   = 'SUCCESS';
-                $payment->paid_at  = Carbon::now();
-                $payment->payload_json = $payload;
-                $payment->save();
-
-                // ✅ simpan status sebelumnya untuk cegah potong stok dua kali
-                $wasPaid = ($order->status === 'PAID');
-
-                // akumulasi ke order
-                $order->paid_total = (float) $order->paid_total + (float) $payment->amount;
-
-                if ($order->paid_total >= $order->grand_total) {
-                    $order->status  = 'PAID';
-                    $order->paid_at = Carbon::now();
-                    $order->save();
-
-                    // ✅ POTONG STOK: hanya saat transisi UNPAID -> PAID
-                    if (!$wasPaid) {
-                        /** @var SalesInventoryService $salesInv */
-                        $salesInv = app(SalesInventoryService::class);
-
-                        $items = $order->items()->get(['id', 'variant_id', 'qty']);
-                        foreach ($items as $it) {
-                            $salesInv->deductOnPaid(
-                                gudangId: (int) $order->gudang_id,
-                                variantId: (int) $it->variant_id,
-                                qty: (float) $it->qty,
-                                note: 'SALE#' . (string) $order->kode,
-                                orderItemId: (int) $it->id,
-                                orderKode: (string) $order->kode
-                            );
-                        }
-                    }
-                } else {
-                    $order->status = 'UNPAID';
-                    $order->save();
+                // Idempotent: kalau payment sudah SUCCESS, tidak perlu update lagi
+                if ($payment->status !== 'SUCCESS') {
+                    $payment->status = 'SUCCESS';
+                    $payment->paid_at = Carbon::now();
+                    $payment->payload_json = $payload;
+                    $payment->save();
                 }
+
+                app(OrderSettlementService::class)->finalizePaid($order->id, $payment->id);
             } elseif (in_array($status, ['EXPIRED', 'VOID', 'FAILED'], true)) {
-                $payment->status   = 'FAILED';
-                $payment->payload_json = $payload;
-                $payment->save();
+                if ($payment->status !== 'FAILED') {
+                    $payment->status = 'FAILED';
+                    $payment->payload_json = $payload;
+                    $payment->save();
+                }
             }
 
             return response()->json(['ok' => true]);
@@ -10126,8 +10096,8 @@ class CategoryService
 
 ### app/Services/CheckoutService.php
 
-- SHA: `3d05ca7259b2`  
-- Ukuran: 13 KB  
+- SHA: `7c034357c501`  
+- Ukuran: 14 KB  
 - Namespace: `App\Services`
 
 **Class `CheckoutService`**
@@ -10153,6 +10123,7 @@ use InvalidArgumentException;
 use App\Services\FeeService;
 use App\Services\AccountingService;
 use Illuminate\Support\Facades\Config;
+use App\Models\CashHolder;
 
 class CheckoutService
 {
@@ -10318,9 +10289,15 @@ class CheckoutService
                 : ($p['payload_json'] ?? [])
             );
 
-        $resolvedHolderId = $p['holder_id'] ?? ($payloadExtra['holder_id'] ?? $order->cashier_id);
-        if ($resolvedHolderId) {
-            $payloadExtra['holder_id'] = (int) $resolvedHolderId;
+        $resolvedHolderId = (int) ($p['holder_id'] ?? ($payloadExtra['holder_id'] ?? 0));
+
+        if ($resolvedHolderId <= 0) {
+            // default: holder pertama untuk cabang order (atau sesuai rule Anda)
+            $resolvedHolderId = (int) (CashHolder::where('cabang_id', $order->cabang_id)->orderBy('id')->value('id') ?? 0);
+        }
+
+        if ($resolvedHolderId > 0) {
+            $payloadExtra['holder_id'] = $resolvedHolderId;
         }
 
         $pay = new Payment();
@@ -10342,13 +10319,20 @@ class CheckoutService
             $cashierId = (int) $order->cashier_id;
             if ($cashierId > 0) {
                 $cash = app(\App\Services\CashService::class);
+
+                // ambil holder_id yang sudah Anda simpan ke payload_json
+                $extra = is_array($pay->payload_json) ? $pay->payload_json : [];
+                $holderId = (int) ($extra['holder_id'] ?? 0);
+
                 $session = $cash->getOrOpenSession($cashierId, (int) $order->cabang_id);
+
                 $cash->mirrorPaymentToSession(
                     $session,
                     (float) $pay->amount,
                     'ORDER',
                     (int) $pay->id,
-                    'ORDER#' . $order->kode
+                    'ORDER#' . $order->kode,
+                    $holderId > 0 ? $holderId : null
                 );
             }
         }
@@ -12370,6 +12354,83 @@ class OrderService
 </body>
 </html>
 HTML;
+    }
+}
+
+```
+</details>
+
+### app/Services/OrderSettlementService.php
+
+- SHA: `e905f0929503`  
+- Ukuran: 2 KB  
+- Namespace: `App\Services`
+
+**Class `OrderSettlementService`**
+
+Metode Publik:
+- **finalizePaid**(int $orderId, ?int $paymentId = null) : *Order*
+<details><summary><strong>Lihat Kode Lengkap</strong></summary>
+
+```php
+<?php
+
+namespace App\Services;
+
+use App\Models\Order;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+
+class OrderSettlementService
+{
+    public function finalizePaid(int $orderId, ?int $paymentId = null): Order
+    {
+        return DB::transaction(function () use ($orderId) {
+            /** @var Order $order */
+            $order = Order::lockForUpdate()->findOrFail($orderId);
+
+            // idempotent guard: kalau sudah PAID, jangan potong stok lagi
+            if ($order->status === 'PAID') {
+                return $order;
+            }
+
+            // pastikan benar-benar lunas (recompute paid_total dari DB)
+            $paid = (float) $order->payments()
+                ->where('status', 'SUCCESS')
+                ->sum('amount');
+
+            $order->paid_total = $paid;
+
+            if ($paid < (float) $order->grand_total) {
+                // belum lunas → jangan potong stok
+                $order->status = 'UNPAID';
+                $order->paid_at = null;
+                $order->save();
+                return $order;
+            }
+
+            // lunas → set PAID
+            $order->status = 'PAID';
+            $order->paid_at = Carbon::now();
+            $order->save();
+
+            // potong stok (sekali)
+            $salesInv = app(SalesInventoryService::class);
+            $items = $order->items()->get(['id','variant_id','qty']);
+
+            foreach ($items as $it) {
+                $salesInv->deductOnPaid(
+                    gudangId: (int) $order->gudang_id,
+                    variantId: (int) $it->variant_id,
+                    qty: (float) $it->qty,
+                    note: 'SALE#' . (string) $order->kode,
+                    orderItemId: (int) $it->id,
+                    orderKode: (string) $order->kode
+                );
+            }
+
+            return $order;
+        });
     }
 }
 
