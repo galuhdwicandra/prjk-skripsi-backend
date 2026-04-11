@@ -8,7 +8,7 @@ use Carbon\Carbon;
 class StockPlanningService
 {
     /**
-     * Estimasi ROP sederhana:
+     * Estimasi ROP:
      * ROP = ceil(AvgDailyDemand * lead_time_days) + (safety_stock ?: 0)
      * AvgDailyDemand dari histori 30 hari terakhir pada gudang+variant.
      */
