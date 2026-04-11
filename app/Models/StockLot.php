@@ -11,7 +11,7 @@ class StockLot extends Model
         'cabang_id',
         'gudang_id',
         'product_variant_id',
-        'lot_no',            // simpan "LOT-2025..." di sini bila VARCHAR
+        'lot_no',
         'received_at',
         'expires_at',
         'qty_received',
