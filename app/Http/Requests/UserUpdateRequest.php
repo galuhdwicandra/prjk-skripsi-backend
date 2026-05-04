@@ -32,7 +32,7 @@ class UserUpdateRequest extends FormRequest
             'phone'     => ['sometimes', 'nullable', 'string', 'max:30'],
             // ⬇️ izinkan null (artinya tidak ganti), min:8 hanya berlaku jika ada nilai
             'password'  => ['sometimes', 'nullable', 'string', 'min:8'],
-            'cabang_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'cabang_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:cabangs,id'],
             'role'      => ['sometimes', Rule::in($roles)],
             'is_active' => ['sometimes', 'boolean'],
         ];

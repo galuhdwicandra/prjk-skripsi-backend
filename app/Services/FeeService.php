@@ -1,19 +1,17 @@
 <?php
-
 namespace App\Services;
 
+use App\Models\Delivery;
 use App\Models\Fee;
 use App\Models\FeeEntry;
-use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\AccountingService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
-use App\Services\AccountingService;
-use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FeeService
 {
@@ -48,7 +46,7 @@ class FeeService
         try {
             if (function_exists('setting')) {
                 $v = setting($key);
-                if ($v !== null && $v !== '' && (int)$v > 0) {
+                if ($v !== null && $v !== '' && (int) $v > 0) {
                     return (int) $v;
                 }
             }
@@ -75,9 +73,9 @@ class FeeService
             $baseAmount = $grandTotal;
             if ($fee->calc_type === 'PERCENT') {
                 if (\function_exists('bcmul') && \function_exists('bcdiv')) {
-                    $feeAmount = bcdiv(bcmul($baseAmount, (string)$fee->rate, 4), '100', 2);
+                    $feeAmount = bcdiv(bcmul($baseAmount, (string) $fee->rate, 4), '100', 2);
                 } else {
-                    $feeAmount = number_format(((float)$baseAmount * (float)$fee->rate) / 100, 2, '.', '');
+                    $feeAmount = number_format(((float) $baseAmount * (float) $fee->rate) / 100, 2, '.', '');
                 }
             } else {
                 $feeAmount = number_format((float) $fee->rate, 2, '.', '');
@@ -106,7 +104,7 @@ class FeeService
                 $entry->base_amount   = $baseAmount;
                 $entry->fee_amount    = $feeAmount;
 
-                if (!$entry->exists) {
+                if (! $entry->exists) {
                     $entry->created_by = Auth::id();
                 }
                 $entry->updated_by = Auth::id();
@@ -115,21 +113,81 @@ class FeeService
                 return $entry;
             });
 
-            // === Hook akuntansi: akru fee (Beban Fee (D) vs Hutang Fee (K)) ===
             $this->postAccrualForFee($createdEntry, $order);
         }
+    }
 
-        // TODO: If you want COURIER fees on DELIVERY completion, implement a similar
-        // path in your Delivery complete handler using base='DELIVERY'.
-        // This service already supports DELIVERY ref types.
+    /** Generate courier fee entries when a delivery turns DELIVERED. */
+    public function generateForDeliveredDelivery(Delivery $delivery): void
+    {
+        $delivery->loadMissing('order');
+
+        $order = $delivery->order;
+
+        if (! $order) {
+            return;
+        }
+
+        if (! $delivery->assigned_to) {
+            return;
+        }
+
+        $cabangId  = (int) $order->cabang_id;
+        $eventDate = Carbon::parse($delivery->completed_at ?? $delivery->updated_at ?? now())->toDateString();
+
+        $baseAmount = (string) ($order->service_fee ?? 0);
+
+        $fees = Fee::query()
+            ->where('cabang_id', $cabangId)
+            ->where('is_active', true)
+            ->where('base', 'DELIVERY')
+            ->where('kind', 'COURIER')
+            ->get();
+
+        foreach ($fees as $fee) {
+            if ($fee->calc_type === 'PERCENT') {
+                if (\function_exists('bcmul') && \function_exists('bcdiv')) {
+                    $feeAmount = bcdiv(bcmul($baseAmount, (string) $fee->rate, 4), '100', 2);
+                } else {
+                    $feeAmount = number_format(((float) $baseAmount * (float) $fee->rate) / 100, 2, '.', '');
+                }
+            } else {
+                $feeAmount = number_format((float) $fee->rate, 2, '.', '');
+            }
+
+            $createdEntry = DB::transaction(function () use ($fee, $delivery, $cabangId, $eventDate, $baseAmount, $feeAmount) {
+                $entry = FeeEntry::query()->firstOrNew([
+                    'fee_id'   => $fee->id,
+                    'ref_type' => 'DELIVERY',
+                    'ref_id'   => $delivery->id,
+                ]);
+
+                $entry->cabang_id     = $cabangId;
+                $entry->period_date   = $eventDate;
+                $entry->owner_user_id = $delivery->assigned_to;
+                $entry->base_amount   = $baseAmount;
+                $entry->fee_amount    = $feeAmount;
+
+                if (! $entry->exists) {
+                    $entry->created_by = Auth::id();
+                }
+
+                $entry->updated_by = Auth::id();
+                $entry->save();
+
+                return $entry;
+            });
+
+            $this->postAccrualForFee($createdEntry, $order);
+        }
     }
 
     private function postAccrualForFee(FeeEntry $entry, Order $order): void
     {
-        $feeExpenseId = $this->accId('acc.fee_expense_id');  // Beban Fee
-        $feePayableId = $this->accId('acc.fee_payable_id');  // Hutang Fee
+        $feeExpenseId = $this->accId('acc.fee_expense_id'); // Beban Fee
+        $feePayableId = $this->accId('acc.fee_payable_id'); // Hutang Fee
 
-        if (!$feeExpenseId || !$feePayableId) {
+        if (! $feeExpenseId || ! $feePayableId) {
             return; // setting belum lengkap → jangan mem-post jurnal
         }
 
@@ -143,8 +201,8 @@ class FeeService
                 'number'       => 'FEE-ACCR-' . $entry->id, // idempotent by (cabang, number)
                 'description'  => 'Akru Fee order #' . $order->kode,
                 'lines'        => [
-                    ['account_id' => $feeExpenseId, 'debit' => (float)$entry->fee_amount, 'credit' => 0,                    'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
-                    ['account_id' => $feePayableId, 'debit' => 0,                             'credit' => (float)$entry->fee_amount, 'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
+                    ['account_id' => $feeExpenseId, 'debit' => (float) $entry->fee_amount, 'credit' => 0, 'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
+                    ['account_id' => $feePayableId, 'debit' => 0, 'credit' => (float) $entry->fee_amount, 'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
                 ],
             ]);
         } catch (\Throwable $e) {
@@ -157,31 +215,31 @@ class FeeService
     public function listEntries(User $actor, array $filters)
     {
         // Accept both {date_from,date_to} and {from,to}, {status}=pay_status, {mine}
-        $from = $filters['from']      ?? $filters['date_from'] ?? null;
-        $to   = $filters['to']        ?? $filters['date_to']   ?? null;
-        $stat = $filters['pay_status'] ?? $filters['status']    ?? null; // UNPAID|PAID|PARTIAL
-        $mine = isset($filters['mine']) ? (int)$filters['mine'] === 1 : false;
-        $role = $filters['role']      ?? null; // SALES|CASHIER|COURIER (from fees.kind)
-        $sort = $filters['sort']      ?? '-period_date'; // period_date | -period_date | amount | -amount | status | -status
+        $from = $filters['from'] ?? $filters['date_from'] ?? null;
+        $to   = $filters['to'] ?? $filters['date_to'] ?? null;
+        $stat = $filters['pay_status'] ?? $filters['status'] ?? null; // UNPAID|PAID|PARTIAL
+        $mine = isset($filters['mine']) ? (int) $filters['mine'] === 1 : false;
+        $role = $filters['role'] ?? null;           // SALES|CASHIER|COURIER (from fees.kind)
+        $sort = $filters['sort'] ?? '-period_date'; // period_date | -period_date | amount | -amount | status | -status
 
         $q = FeeEntry::query()
             ->with(['fee'])
             ->when(isset($filters['cabang_id']), fn($x) => $x->where('cabang_id', $filters['cabang_id']))
             ->when($from !== null, fn($x) => $x->whereDate('period_date', '>=', $from))
-            ->when($to !== null,   fn($x) => $x->whereDate('period_date', '<=', $to))
+            ->when($to !== null, fn($x) => $x->whereDate('period_date', '<=', $to))
             ->when($stat !== null, fn($x) => $x->where('pay_status', $stat))
             ->when($role !== null, fn($x) => $x->whereHas('fee', fn($w) => $w->where('kind', $role)));
 
         // Role-visibility: sales/cashier/courier see only their own
         $isAdmin = $this->isSuper($actor) || $this->isAdmin($actor);
         $isStaff = $this->isSales($actor) || $this->isKasir($actor) || $this->isKurir($actor);
-        if ($isStaff && !$isAdmin) {
+        if ($isStaff && ! $isAdmin) {
             $q->where('owner_user_id', $actor->id);
         } else {
             // Admins: if ?mine=1 is passed, show only their entries; else default to branch scope when cabang_id missing
             if ($mine) {
                 $q->where('owner_user_id', $actor->id);
-            } elseif (!isset($filters['cabang_id']) && ($actor->cabang_id ?? null)) {
+            } elseif (! isset($filters['cabang_id']) && ($actor->cabang_id ?? null)) {
                 $q->where('cabang_id', $actor->cabang_id);
             }
         }
@@ -239,13 +297,13 @@ class FeeService
         });
     }
 
-    private function postPaymentForFee(FeeEntry $entry, \Illuminate\Support\Carbon $paidAt): void
+    private function postPaymentForFee(FeeEntry $entry, Carbon $paidAt): void
     {
         $feePayableId = $this->accId('acc.fee_payable_id'); // Hutang Fee
-        // Default pakai Kas; jika ingin bedakan Bank, tambahkan logika sesuai metode
-        $cashId       = $this->accId('acc.cash_id');
+                                                            // Default pakai Kas; jika ingin bedakan Bank, tambahkan logika sesuai metode
+        $cashId = $this->accId('acc.cash_id');
 
-        if (!$feePayableId || !$cashId) {
+        if (! $feePayableId || ! $cashId) {
             return; // setting belum lengkap
         }
 
@@ -264,8 +322,8 @@ class FeeService
                 'number'       => 'FEE-PAY-' . $entry->id, // idempotent by (cabang, number)
                 'description'  => 'Pembayaran Fee #' . $entry->id,
                 'lines'        => [
-                    ['account_id' => $feePayableId, 'debit' => $amount, 'credit' => 0,       'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
-                    ['account_id' => $cashId,       'debit' => 0,       'credit' => $amount, 'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
+                    ['account_id' => $feePayableId, 'debit' => $amount, 'credit' => 0, 'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
+                    ['account_id' => $cashId, 'debit' => 0, 'credit' => $amount, 'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
                 ],
             ]);
         } catch (\Throwable $e) {
@@ -299,7 +357,7 @@ class FeeService
                     $r->fee_amount,
                     $r->pay_status,
                     $r->paid_amount,
-                    optional($r->paid_at)->toDateTimeString()
+                    optional($r->paid_at)->toDateTimeString(),
                 ]);
             }
             fclose($out);
@@ -312,7 +370,7 @@ class FeeService
      * - Tries a global function 'audit', then a container binding 'audit.logger'.
      * - Falls back to a warning log if nothing is available.
      */
-    private function auditSafe(string $action, string $table, int|string $id, array $payload = []): void
+    private function auditSafe(string $action, string $table, int | string $id, array $payload = []): void
     {
         try {
             // Prefer a global helper function named "audit"
@@ -339,19 +397,19 @@ class FeeService
     {
         $q = Fee::query();
 
-        if (!empty($filters['cabang_id'])) {
+        if (! empty($filters['cabang_id'])) {
             $q->where('cabang_id', $filters['cabang_id']);
         }
-        if (!empty($filters['kind'])) {
+        if (! empty($filters['kind'])) {
             $q->where('kind', $filters['kind']);
         }
         if (array_key_exists('is_active', $filters) && $filters['is_active'] !== null) {
-            $q->where('is_active', (bool)$filters['is_active']);
+            $q->where('is_active', (bool) $filters['is_active']);
         }
-        if (!empty($filters['base'])) {
+        if (! empty($filters['base'])) {
             $q->where('base', $filters['base']);
         }
-        if (!empty($filters['q'])) {
+        if (! empty($filters['q'])) {
             $q->where('name', 'like', '%' . $filters['q'] . '%');
         }
 
@@ -363,25 +421,120 @@ class FeeService
         return $q->paginate($perPage)->appends($filters);
     }
 
-    public function create(array $dto): \App\Models\Fee
+    public function create(array $dto): Fee
     {
         return DB::transaction(function () use ($dto) {
             $dto['created_by'] = Auth::id();
             $dto['updated_by'] = Auth::id();
-            return \App\Models\Fee::create($dto);
-        });
-    }
 
-    public function update(\App\Models\Fee $fee, array $dto): \App\Models\Fee
-    {
-        return DB::transaction(function () use ($fee, $dto) {
-            $dto['updated_by'] = Auth::id();
-            $fee->fill($dto)->save();
+            $fee = Fee::create($dto);
+
+            $this->backfillPaidOrdersForFee($fee);
+
             return $fee;
         });
     }
 
-    public function delete(\App\Models\Fee $fee): void
+    private function backfillPaidOrdersForFee(Fee $fee): void
+    {
+        if (! $fee->is_active) {
+            return;
+        }
+
+        if ($fee->base !== 'GRAND_TOTAL') {
+            return;
+        }
+
+        if (! in_array($fee->kind, ['CASHIER', 'SALES'], true)) {
+            return;
+        }
+
+        Order::query()
+            ->where('cabang_id', $fee->cabang_id)
+            ->where(function ($q) {
+                $q->where('status', 'PAID')
+                    ->orWhereNotNull('paid_at')
+                    ->orWhereColumn('paid_total', '>=', 'grand_total');
+            })
+            ->where('grand_total', '>', 0)
+            ->orderBy('id')
+            ->chunkById(100, function ($orders) use ($fee) {
+                foreach ($orders as $order) {
+                    $exists = FeeEntry::query()
+                        ->where('fee_id', $fee->id)
+                        ->where('ref_type', 'ORDER')
+                        ->where('ref_id', $order->id)
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
+                    }
+
+                    $baseAmount = (string) $order->grand_total;
+
+                    if ($fee->calc_type === 'PERCENT') {
+                        if (\function_exists('bcmul') && \function_exists('bcdiv')) {
+                            $feeAmount = bcdiv(
+                                bcmul($baseAmount, (string) $fee->rate, 4),
+                                '100',
+                                2
+                            );
+                        } else {
+                            $feeAmount = number_format(
+                                ((float) $baseAmount * (float) $fee->rate) / 100,
+                                2,
+                                '.',
+                                ''
+                            );
+                        }
+                    } else {
+                        $feeAmount = number_format((float) $fee->rate, 2, '.', '');
+                    }
+
+                    $ownerUserId = null;
+
+                    if ($fee->kind === 'CASHIER') {
+                        $ownerUserId = $order->cashier_id ?? $order->created_by ?? null;
+                    }
+
+                    if ($fee->kind === 'SALES') {
+                        $ownerUserId = $order->sales_id ?? null;
+                    }
+
+                    FeeEntry::query()->create([
+                        'fee_id'        => $fee->id,
+                        'cabang_id'     => $fee->cabang_id,
+                        'period_date'   => Carbon::parse($order->paid_at ?? $order->updated_at)->toDateString(),
+                        'ref_type'      => 'ORDER',
+                        'ref_id'        => $order->id,
+                        'owner_user_id' => $ownerUserId,
+                        'base_amount'   => $baseAmount,
+                        'fee_amount'    => $feeAmount,
+                        'pay_status'    => 'UNPAID',
+                        'paid_amount'   => '0',
+                        'paid_at'       => null,
+                        'notes'         => 'Generated from existing paid order.',
+                        'created_by'    => Auth::id(),
+                        'updated_by'    => Auth::id(),
+                    ]);
+                }
+            });
+    }
+
+    public function update(Fee $fee, array $dto): Fee
+    {
+        return DB::transaction(function () use ($fee, $dto) {
+            $dto['updated_by'] = Auth::id();
+
+            $fee->fill($dto)->save();
+
+            $this->backfillPaidOrdersForFee($fee->refresh());
+
+            return $fee->refresh();
+        });
+    }
+
+    public function delete(Fee $fee): void
     {
         DB::transaction(function () use ($fee) {
             $fee->delete();

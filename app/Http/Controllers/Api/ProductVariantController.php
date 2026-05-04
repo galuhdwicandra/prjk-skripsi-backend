@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -12,63 +11,85 @@ use Illuminate\Http\Request;
 
 class ProductVariantController extends Controller
 {
-    public function __construct(private ProductService $svc) {}
+    public function __construct(private ProductService $svc)
+    {}
 
     public function search(Request $req)
     {
-        // Pastikan policy Anda punya ability 'viewAny' untuk ProductVariant
         $this->authorize('viewAny', ProductVariant::class);
 
-        // Validasi ringan
         $validated = $req->validate([
             'q'            => ['nullable', 'string', 'max:100'],
             'warehouse_id' => ['nullable', 'integer', 'min:1'],
+            'gudang_id'    => ['nullable', 'integer', 'min:1'],
             'per_page'     => ['nullable', 'integer', 'min:1', 'max:50'],
+            'page'         => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $term        = trim((string)($validated['q'] ?? ''));
-        $warehouseId = $validated['warehouse_id'] ?? null;
-        $perPage     = (int)($validated['per_page'] ?? 10);
+        $term = trim((string) ($validated['q'] ?? ''));
+
+        $warehouseId = $validated['warehouse_id'] ?? $validated['gudang_id'] ?? null;
+
+        $perPage = (int) ($validated['per_page'] ?? 12);
 
         $query = ProductVariant::query()
-            ->with(['product:id,nama,is_active'])          // untuk tampilkan nama produk
+            ->with([
+                'product:id,nama,slug,is_active',
+            ])
             ->where('is_active', true)
-            ->whereHas('product', fn($q) => $q->where('is_active', true));
+            ->whereHas('product', function ($productQuery) {
+                $productQuery->where('is_active', true);
+            });
 
-        // Pencarian fleksibel: sku / size / type / nama produk
         if ($term !== '') {
-            $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $term) . '%';
-            $query->where(function ($w) use ($like) {
-                $w->where('sku', 'like', $like)
-                    ->orWhere('size', 'like', $like)
-                    ->orWhere('type', 'like', $like)
-                    ->orWhereHas('product', fn($p) => $p->where('nama', 'like', $like));
+            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $term) . '%';
+
+            $query->where(function ($searchQuery) use ($like) {
+                $searchQuery
+                    ->where('sku', 'ILIKE', $like)
+                    ->orWhere('size', 'ILIKE', $like)
+                    ->orWhere('type', 'ILIKE', $like)
+                    ->orWhere('tester', 'ILIKE', $like)
+                    ->orWhereHas('product', function ($productQuery) use ($like) {
+                        $productQuery
+                            ->where('nama', 'ILIKE', $like)
+                            ->orWhere('slug', 'ILIKE', $like);
+                    });
             });
         }
 
-        // Filter gudang opsional: hanya varian yang punya stok di gudang tsb
-        if (!empty($warehouseId)) {
-            $query->whereExists(function ($sub) use ($warehouseId) {
-                $sub->from('variant_stocks')
-                    ->whereColumn('variant_stocks.product_variant_id', 'product_variants.id')
-                    ->where('variant_stocks.gudang_id', $warehouseId);
-            });
+        if (! empty($warehouseId)) {
+            $query->withSum([
+                'stocks as stock_qty' => function ($stockQuery) use ($warehouseId) {
+                    $stockQuery->where('gudang_id', (int) $warehouseId);
+                },
+            ], 'qty');
         }
 
-        $paginator = $query->orderByDesc('id')->paginate($perPage);
+        $paginator = $query
+            ->orderByDesc('id')
+            ->paginate($perPage);
 
-        // Bentuk data seperti yang UI harapkan
-        $data = $paginator->getCollection()->map(function (ProductVariant $v) {
-            $namaProduk = $v->product->nama ?? '';
+        $data = $paginator->getCollection()->map(function (ProductVariant $variant) {
+            $productName = $variant->product?->nama ?? '';
+
             return [
-                'id'        => $v->id,
-                'sku'       => $v->sku,
-                'harga'     => (float) $v->harga,
-                'nama'      => $namaProduk,
-                'full_name' => trim($namaProduk . ' ' . $v->size . ' ' . $v->type),
-                // 'barcode' => $v->barcode ?? null, // aktifkan jika ada kolom barcode
+                'id'         => $variant->id,
+                'product_id' => $variant->product_id,
+                'sku'        => $variant->sku,
+                'harga'      => (float) $variant->harga,
+                'nama'       => $productName,
+                'full_name'  => trim(collect([
+                    $productName,
+                    $variant->size,
+                    $variant->type,
+                    $variant->tester,
+                ])->filter()->implode(' ')),
+                'stock_qty'  => (int) ($variant->stock_qty ?? 0),
+                'image_url'  => $variant->product?->image_url,
+                'media_path' => null,
             ];
-        });
+        })->values();
 
         return response()->json([
             'data'         => $data,
@@ -76,6 +97,14 @@ class ProductVariantController extends Controller
             'per_page'     => $paginator->perPage(),
             'total'        => $paginator->total(),
             'last_page'    => $paginator->lastPage(),
+            'meta'         => [
+                'current_page' => $paginator->currentPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+                'last_page'    => $paginator->lastPage(),
+            ],
+            'message'      => 'OK',
+            'errors'       => [],
         ]);
     }
 
@@ -100,7 +129,7 @@ class ProductVariantController extends Controller
 
         return response()->json([
             'message' => 'Variant created',
-            'data' => $variant,
+            'data'    => $variant,
         ], 201);
     }
 
@@ -127,7 +156,7 @@ class ProductVariantController extends Controller
 
         return response()->json([
             'message' => 'Variant updated',
-            'data' => $updated,
+            'data'    => $updated,
         ]);
     }
 

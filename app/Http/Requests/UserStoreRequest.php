@@ -20,7 +20,7 @@ class UserStoreRequest extends FormRequest
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'string', 'min:8', 'max:190'],
-            'cabang_id' => ['nullable', 'integer', 'min:1'],
+            'cabang_id' => ['nullable', 'integer', 'min:1', 'exists:cabangs,id'],
             'role' => ['required', Rule::in($roles)],
             'is_active' => ['boolean'],
         ];

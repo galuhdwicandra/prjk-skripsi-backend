@@ -49,7 +49,22 @@ class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $user = $this->users->create($request->validated());
+        $actor = $request->user();
+        $data  = $request->validated();
+
+        if ($actor->role === 'admin_cabang') {
+            if (! $actor->cabang_id) {
+                abort(422, 'Akun admin cabang belum memiliki cabang_id.');
+            }
+
+            if (($data['role'] ?? null) === 'superadmin') {
+                abort(403, 'Admin cabang tidak boleh membuat user superadmin.');
+            }
+
+            $data['cabang_id'] = (int) $actor->cabang_id;
+        }
+
+        $user = $this->users->create($data);
 
         return response()->json($user, 201);
     }
@@ -69,7 +84,22 @@ class UserController extends Controller
         $target = $this->users->findOrFail($id);
         $this->authorize('update', $target);
 
-        $updated = $this->users->update($target, $request->validated());
+        $actor = $request->user();
+        $data  = $request->validated();
+
+        if ($actor->role === 'admin_cabang') {
+            if (! $actor->cabang_id) {
+                abort(422, 'Akun admin cabang belum memiliki cabang_id.');
+            }
+
+            if (($data['role'] ?? $target->role) === 'superadmin') {
+                abort(403, 'Admin cabang tidak boleh mengubah user menjadi superadmin.');
+            }
+
+            $data['cabang_id'] = (int) $actor->cabang_id;
+        }
+
+        $updated = $this->users->update($target, $data);
         return response()->json($updated);
     }
 

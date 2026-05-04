@@ -1,10 +1,9 @@
 <?php
-
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
@@ -30,8 +29,8 @@ class DashboardService
             $paidCount   = (clone $paidOrders)->count();
             $revenue     = (clone $paidOrders)->sum('grand_total');
 
-            $avgTicket   = $paidCount > 0 ? (float) ($revenue / $paidCount) : 0.0;
-            $paidRate    = $ordersCount > 0 ? round(($paidCount / $ordersCount) * 100, 2) : 0.0;
+            $avgTicket = $paidCount > 0 ? (float) ($revenue / $paidCount) : 0.0;
+            $paidRate  = $ordersCount > 0 ? round(($paidCount / $ordersCount) * 100, 2) : 0.0;
 
             // Reconcile against payments (SUCCESS) in same period and cabang
             $paidViaPayments = DB::table('payments')
@@ -41,19 +40,19 @@ class DashboardService
                 ->whereBetween('payments.paid_at', [$from, $to])
                 ->sum('payments.amount');
 
-            $diff = (float) $revenue - (float) $paidViaPayments;
+            $diff         = (float) $revenue - (float) $paidViaPayments;
             $isConsistent = abs($diff) < 0.01;
 
             return [
-                'orders_total' => (int) $ordersCount,
-                'orders_paid'  => (int) $paidCount,
-                'revenue'      => (float) $revenue,
-                'avg_ticket'   => (float) $avgTicket,
+                'orders_total'  => (int) $ordersCount,
+                'orders_paid'   => (int) $paidCount,
+                'revenue'       => (float) $revenue,
+                'avg_ticket'    => (float) $avgTicket,
                 'paid_rate_pct' => (float) $paidRate,
-                'validation'   => [
-                    'paid_amount_sum' => (float) $paidViaPayments,
+                'validation'    => [
+                    'paid_amount_sum'         => (float) $paidViaPayments,
                     'orders_vs_payments_diff' => (float) $diff,
-                    'is_consistent' => $isConsistent,
+                    'is_consistent'           => $isConsistent,
                 ],
             ];
         });
@@ -61,9 +60,9 @@ class DashboardService
 
     public function chart7d(?int $cabangId): array
     {
-        $to = now()->endOfDay();
+        $to   = now()->endOfDay();
         $from = now()->subDays(6)->startOfDay();
-        $key = "dash:chart7d:c{$cabangId}:{$from->toDateString()}";
+        $key  = "dash:chart7d:c{$cabangId}:{$from->toDateString()}";
 
         return Cache::store(config('cache.default'))->remember($key, $this->ttl, function () use ($cabangId, $from, $to) {
             $rows = DB::table('orders')
@@ -74,13 +73,13 @@ class DashboardService
                 ->orderBy('d')
                 ->get();
 
-            $map = $rows->keyBy('d');
+            $map  = $rows->keyBy('d');
             $days = [];
             for ($i = 0; $i < 7; $i++) {
-                $day = now()->subDays(6 - $i)->toDateString();
+                $day    = now()->subDays(6 - $i)->toDateString();
                 $days[] = [
-                    'date' => $day,
-                    'orders' => (int) ($map[$day]->cnt ?? 0),
+                    'date'    => $day,
+                    'orders'  => (int) ($map[$day]->cnt ?? 0),
                     'revenue' => (float) ($map[$day]->revenue ?? 0),
                 ];
             }
@@ -105,9 +104,9 @@ class DashboardService
 
             return $rows->map(fn($r) => [
                 'variant_id' => (int) $r->variant_id,
-                'name' => $r->name,
-                'qty' => (float) $r->qty,
-                'revenue' => (float) $r->revenue,
+                'name'       => $r->name,
+                'qty'        => (float) $r->qty,
+                'revenue'    => (float) $r->revenue,
             ])->all();
         });
     }
@@ -133,37 +132,85 @@ class DashboardService
             $rows = $query->orderBy('vs.qty')->limit(50)->get();
 
             return $rows->map(fn($r) => [
-                'gudang_id'    => (int) $r->gudang_id,
-                'variant_id'   => (int) $r->product_variant_id,
-                'sku'          => $r->sku,
-                'name'         => $r->product_name,
-                'qty_on_hand'  => (float) $r->qty,
-                'min_stock'    => (float) $r->min_stok,
+                'gudang_id'   => (int) $r->gudang_id,
+                'variant_id'  => (int) $r->product_variant_id,
+                'sku'         => $r->sku,
+                'name'        => $r->product_name,
+                'qty_on_hand' => (float) $r->qty,
+                'min_stock'   => (float) $r->min_stok,
+            ])->all();
+        });
+    }
+
+    public function latestOrders(?int $cabangId, int $limit = 8): array
+    {
+        $limit = min(max($limit, 1), 20);
+
+        $from = now()->startOfDay();
+        $to   = now()->endOfDay();
+
+        $key = "dash:latest-orders:today:c{$cabangId}:l{$limit}:d{$from->toDateString()}";
+
+        return Cache::store(config('cache.default'))->remember($key, $this->ttl, function () use ($cabangId, $limit, $from, $to) {
+            $rows = DB::table('orders as o')
+                ->leftJoin('cabangs as c', 'o.cabang_id', '=', 'c.id')
+                ->when($cabangId, fn($q) => $q->where('o.cabang_id', $cabangId))
+                ->whereBetween('o.ordered_at', [$from, $to])
+                ->select([
+                    'o.id',
+                    'o.kode',
+                    'o.cabang_id',
+                    'c.nama as cabang_nama',
+                    'o.customer_name',
+                    'o.customer_phone',
+                    'o.status',
+                    'o.grand_total',
+                    'o.paid_total',
+                    'o.cash_position',
+                    'o.ordered_at',
+                ])
+                ->orderByDesc('o.ordered_at')
+                ->orderByDesc('o.id')
+                ->limit($limit)
+                ->get();
+
+            return $rows->map(fn($r) => [
+                'id'             => (int) $r->id,
+                'kode'           => $r->kode,
+                'cabang_id'      => (int) $r->cabang_id,
+                'cabang_nama'    => $r->cabang_nama,
+                'customer_name'  => $r->customer_name,
+                'customer_phone' => $r->customer_phone,
+                'status'         => $r->status,
+                'grand_total'    => (float) $r->grand_total,
+                'paid_total'     => (float) $r->paid_total,
+                'cash_position'  => $r->cash_position,
+                'ordered_at'     => $r->ordered_at,
             ])->all();
         });
     }
 
     public function quickActions(?int $cabangId): array
     {
-        $low = $this->lowStock($cabangId, null);
+        $low     = $this->lowStock($cabangId, null);
         $actions = [];
 
-        if (!empty($low)) {
+        if (! empty($low)) {
             $actions[] = [
-                'type' => 'LOW_STOCK',
-                'label' => 'Replenish low stock items',
+                'type'    => 'LOW_STOCK',
+                'label'   => 'Replenish low stock items',
                 'payload' => [
-                    'count' => count($low),
+                    'count'     => count($low),
                     'first_sku' => $low[0]['sku'] ?? null,
                 ],
             ];
         }
 
         $chart = $this->chart7d($cabangId);
-        $y = collect($chart)->firstWhere('date', now()->subDay()->toDateString());
+        $y     = collect($chart)->firstWhere('date', now()->subDay()->toDateString());
         if ($y && $y['orders'] > 0 && $y['revenue'] == 0.0) {
             $actions[] = [
-                'type' => 'PAYMENT_CHECK',
+                'type'  => 'PAYMENT_CHECK',
                 'label' => 'Investigate payments with PENDING/FAILED status',
             ];
         }

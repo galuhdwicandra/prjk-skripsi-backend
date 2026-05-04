@@ -1,28 +1,27 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OrderSetCashPositionRequest;
 use App\Http\Requests\Orders\IndexOrdersRequest;
-use App\Http\Requests\Orders\UpdateOrderItemsRequest;
 use App\Http\Requests\Orders\ReprintReceiptRequest;
 use App\Http\Requests\Orders\ResendWARequest;
+use App\Http\Requests\Orders\UpdateOrderItemsRequest;
 use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 
 class OrdersController extends Controller
 {
-    public function __construct(private OrderService $service) {}
+    public function __construct(private OrderService $service)
+    {}
 
     public function index(IndexOrdersRequest $req)
     {
         $this->authorize('viewAny', Order::class);
-        $user = $req->user();
+        $user      = $req->user();
         $paginator = $this->service->list(
             $req->validated(),
             $user->role === 'superadmin' ? null : $user->cabang_id
@@ -34,7 +33,56 @@ class OrdersController extends Controller
     public function show(Request $req, Order $order)
     {
         $this->authorize('view', $order);
-        return response()->json(['data' => $order->load(['items', 'payments'])]);
+
+        $order->load([
+            'payments',
+            'items.lotAllocations.stockLot' => function ($q) {
+                $q->select([
+                    'id',
+                    'cabang_id',
+                    'gudang_id',
+                    'product_variant_id',
+                    'lot_no',
+                    'received_at',
+                    'expires_at',
+                    'qty_received',
+                    'qty_remaining',
+                    'unit_cost',
+                    'created_at',
+                    'updated_at',
+                ]);
+            },
+        ]);
+
+        $order->items->each(function ($item) {
+            $item->setAttribute(
+                'fifo_allocations',
+                $item->lotAllocations->map(function ($allocation) {
+                    $lot = $allocation->stockLot;
+
+                    return [
+                        'id'            => $allocation->id,
+                        'order_item_id' => $allocation->order_item_id,
+                        'stock_lot_id'  => $allocation->stock_lot_id,
+                        'qty_allocated' => (int) $allocation->qty_allocated,
+                        'unit_cost'     => $allocation->unit_cost,
+                        'lot'           => $lot ? [
+                            'id'            => $lot->id,
+                            'lot_no'        => $lot->lot_no,
+                            'received_at'   => optional($lot->received_at)->toDateString(),
+                            'expires_at'    => optional($lot->expires_at)->toDateString(),
+                            'qty_received'  => (int) $lot->qty_received,
+                            'qty_remaining' => (int) $lot->qty_remaining,
+                            'unit_cost'     => $lot->unit_cost,
+                        ] : null,
+                    ];
+                })->values()
+            );
+
+            unset($item->lotAllocations);
+        });
+
+        return response()->json(['data' => $order]);
     }
 
     public function updateItems(UpdateOrderItemsRequest $req, Order $order)
@@ -58,7 +106,7 @@ class OrdersController extends Controller
         $v = $req->validated();
 
         return DB::transaction(function () use ($order, $v) {
-            $before = $order->cash_position;
+            $before               = $order->cash_position;
             $order->cash_position = $v['cash_position']; // CUSTOMER | CASHIER | SALES | ADMIN
             $order->save();
 

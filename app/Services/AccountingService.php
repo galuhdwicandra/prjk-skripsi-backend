@@ -1,10 +1,11 @@
 <?php
-
 namespace App\Services;
 
-use App\Models\{Account, FiscalPeriod, JournalEntry, JournalLine};
-use Illuminate\Support\Facades\DB;
+use App\Models\Account;
+use App\Models\FiscalPeriod;
+use App\Models\JournalEntry;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AccountingService
 {
@@ -41,16 +42,16 @@ class AccountingService
             // Reset lines lalu isi ulang
             $entry->lines()->delete();
 
-            $sumDebit = 0;
+            $sumDebit  = 0;
             $sumCredit = 0;
             foreach ($payload['lines'] as $i => $line) {
                 /** @var Account $acc */
                 $acc = Account::query()->whereKey($line['account_id'])->first();
-                if (!$acc || !$acc->is_active) {
+                if (! $acc || ! $acc->is_active) {
                     throw new \InvalidArgumentException("Akun tidak aktif/invalid pada baris #" . ($i + 1));
                 }
 
-                $debit  = (float) ($line['debit']  ?? 0);
+                $debit  = (float) ($line['debit'] ?? 0);
                 $credit = (float) ($line['credit'] ?? 0);
                 if ($debit < 0 || $credit < 0) {
                     throw new \InvalidArgumentException("Nilai negatif tidak diperbolehkan (#" . ($i + 1) . ")");
@@ -109,14 +110,14 @@ class AccountingService
 
             // Audit
             DB::table('audit_logs')->insert([
-                'actor_type' => 'USER',
-                'actor_id'   => Auth::id(),
-                'action'     => 'JOURNAL_POSTED',
-                'model'      => 'JournalEntry',
-                'model_id'   => $entry->id,
-                'diff_json'  => json_encode(['number' => $entry->number, 'posted_at' => now()->toDateTimeString()]),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'actor_type'  => 'USER',
+                'actor_id'    => Auth::id(),
+                'action'      => 'JOURNAL_POSTED',
+                'model'       => 'JournalEntry',
+                'model_id'    => $entry->id,
+                'diff_json'   => json_encode(['number' => $entry->number, 'posted_at' => now()->toDateTimeString()]),
+                'created_at'  => now(),
+                'updated_at'  => now(),
                 'occurred_at' => now(),
             ]);
 
@@ -195,12 +196,25 @@ class AccountingService
             ->where('je.period_year', $year)
             ->where('je.period_month', $month)
             ->where('je.status', 'POSTED')
-            ->whereIn('a.type', ['Revenue', 'Expense'])
-            ->groupBy('a.type')
-            ->selectRaw("a.type, SUM(jl.debit) as debit, SUM(jl.credit) as credit")
-            ->get()->keyBy('type')->all();
+            ->whereIn(DB::raw('UPPER(a.type)'), ['REVENUE', 'EXPENSE'])
+            ->groupBy(DB::raw('UPPER(a.type)'))
+            ->selectRaw("
+            UPPER(a.type) as type,
+            COALESCE(SUM(jl.debit), 0) as debit,
+            COALESCE(SUM(jl.credit), 0) as credit
+        ")
+            ->get();
 
-        return $rows;
+        return [
+            'Revenue' => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'REVENUE'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'REVENUE'))->credit,
+            ],
+            'Expense' => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'EXPENSE'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'EXPENSE'))->credit,
+            ],
+        ];
     }
 
     public function balanceSheet(int $cabangId, int $year, int $month): array
@@ -212,11 +226,28 @@ class AccountingService
             ->where('je.period_year', $year)
             ->where('je.period_month', $month)
             ->where('je.status', 'POSTED')
-            ->whereIn('a.type', ['Asset', 'Liability', 'Equity'])
-            ->groupBy('a.type')
-            ->selectRaw("a.type, SUM(jl.debit) as debit, SUM(jl.credit) as credit")
-            ->get()->keyBy('type')->all();
+            ->whereIn(DB::raw('UPPER(a.type)'), ['ASSET', 'LIABILITY', 'EQUITY'])
+            ->groupBy(DB::raw('UPPER(a.type)'))
+            ->selectRaw("
+            UPPER(a.type) as type,
+            COALESCE(SUM(jl.debit), 0) as debit,
+            COALESCE(SUM(jl.credit), 0) as credit
+        ")
+            ->get();
 
-        return $rows;
+        return [
+            'Asset'     => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'ASSET'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'ASSET'))->credit,
+            ],
+            'Liability' => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'LIABILITY'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'LIABILITY'))->credit,
+            ],
+            'Equity'    => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'EQUITY'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'EQUITY'))->credit,
+            ],
+        ];
     }
 }

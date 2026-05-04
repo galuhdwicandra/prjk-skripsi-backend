@@ -1,26 +1,26 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\CommonQuery;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
-    public function __construct(private DashboardService $svc) {}
+    public function __construct(private DashboardService $svc)
+    {}
 
     private function ok($data, $meta = [], $message = 'OK')
     {
         return response()->json([
-            'data' => $data,
-            'meta' => $meta,
+            'data'    => $data,
+            'meta'    => $meta,
             'message' => $message,
-            'errors' => (object) [],
+            'errors'  => (object) [],
         ]);
     }
 
@@ -28,8 +28,8 @@ class DashboardController extends Controller
     {
         Gate::authorize('view', 'dashboard');
         [$from, $to] = $rq->dateRange();
-        $cabangId = $rq->branchIdOrUser(); // still reading "branch_id" from query param
-        $out = $this->svc->kpis($cabangId, $from, $to);
+        $cabangId    = $rq->branchIdOrUser(); // still reading "branch_id" from query param
+        $out         = $this->svc->kpis($cabangId, $from, $to);
 
         $this->auditView('dashboard.kpis', ['cabang_id' => $cabangId, 'from' => $from, 'to' => $to]);
         return $this->ok($out, ['from' => $from->toDateTimeString(), 'to' => $to->toDateTimeString()]);
@@ -51,8 +51,8 @@ class DashboardController extends Controller
     {
         Gate::authorize('view', 'dashboard');
         $cabangId = $rq->branchIdOrUser();
-        $limit = (int) ($rq->integer('limit') ?? 5);
-        $out = $this->svc->topProducts($cabangId, $limit);
+        $limit    = (int) ($rq->integer('limit') ?? 5);
+        $out      = $this->svc->topProducts($cabangId, $limit);
 
         $this->auditView('dashboard.topProducts', ['cabang_id' => $cabangId, 'limit' => $limit]);
         return $this->ok($out, ['limit' => $limit]);
@@ -61,19 +61,40 @@ class DashboardController extends Controller
     public function lowStock(CommonQuery $rq)
     {
         Gate::authorize('view', 'dashboard');
-        $cabangId = $rq->branchIdOrUser();
+        $cabangId  = $rq->branchIdOrUser();
         $threshold = $rq->input('threshold') !== null ? (float) $rq->input('threshold') : null;
-        $out = $this->svc->lowStock($cabangId, $threshold);
+        $out       = $this->svc->lowStock($cabangId, $threshold);
 
         $this->auditView('dashboard.lowStock', ['cabang_id' => $cabangId, 'threshold' => $threshold]);
         return $this->ok($out, ['threshold' => $threshold]);
+    }
+
+    public function latestOrders(CommonQuery $rq)
+    {
+        Gate::authorize('view', 'dashboard');
+
+        $cabangId = $rq->branchIdOrUser();
+        $limit    = min(max((int) ($rq->integer('limit') ?: 8), 1), 20);
+
+        $out = $this->svc->latestOrders($cabangId, $limit);
+
+        $this->auditView('dashboard.latestOrders.today', [
+            'cabang_id' => $cabangId,
+            'limit'     => $limit,
+            'date'      => now()->toDateString(),
+        ]);
+
+        return $this->ok($out, [
+            'limit' => $limit,
+            'date'  => now()->toDateString(),
+        ]);
     }
 
     public function quickActions(Request $rq)
     {
         Gate::authorize('view', 'dashboard');
         $cabangId = $rq->integer('branch_id') ?: ($rq->user()->cabang_id ?? null);
-        $out = $this->svc->quickActions($cabangId);
+        $out      = $this->svc->quickActions($cabangId);
 
         $this->auditView('dashboard.quickActions', ['cabang_id' => $cabangId]);
         return $this->ok($out);

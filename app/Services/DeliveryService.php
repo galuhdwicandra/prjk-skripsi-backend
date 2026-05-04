@@ -1,16 +1,18 @@
 <?php
-
 namespace App\Services;
 
-use App\Models\{Delivery, DeliveryEvent, Order, Payment, User};
+use App\Models\Delivery;
+use App\Models\DeliveryEvent;
+use App\Models\Order;
+use App\Models\User;
+use App\Services\CheckoutService;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Filesystem\FilesystemAdapter;
-use App\Services\CheckoutService;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class DeliveryService
 {
@@ -34,24 +36,24 @@ class DeliveryService
 
         return DB::transaction(function () use ($order, $type, $payload) {
             $delivery = new Delivery([
-                'order_id' => $order->id,
-                'type'     => $type,
-                'status'   => 'REQUESTED',
+                'order_id'         => $order->id,
+                'type'             => $type,
+                'status'           => 'REQUESTED',
                 'pickup_address'   => $payload['pickup_address'] ?? null,
                 'delivery_address' => $payload['delivery_address'] ?? null,
-                'pickup_lat'  => $payload['pickup_lat'] ?? null,
-                'pickup_lng'  => $payload['pickup_lng'] ?? null,
-                'delivery_lat' => $payload['delivery_lat'] ?? null,
-                'delivery_lng' => $payload['delivery_lng'] ?? null,
-                'requested_at' => now(),
+                'pickup_lat'       => $payload['pickup_lat'] ?? null,
+                'pickup_lng'       => $payload['pickup_lng'] ?? null,
+                'delivery_lat'     => $payload['delivery_lat'] ?? null,
+                'delivery_lng'     => $payload['delivery_lng'] ?? null,
+                'requested_at'     => now(),
             ]);
             $delivery->save();
 
             // event awal
             DeliveryEvent::create([
                 'delivery_id' => $delivery->id,
-                'status' => 'REQUESTED',
-                'note'   => 'Delivery requested',
+                'status'      => 'REQUESTED',
+                'note'        => 'Delivery requested',
                 'occurred_at' => now(),
             ]);
 
@@ -73,7 +75,7 @@ class DeliveryService
             ->orderBy('id', 'asc')
             ->first();
 
-        if (!$candidate) {
+        if (! $candidate) {
             throw ValidationException::withMessages(['assigned_to' => 'Tidak ada kurir tersedia di cabang ini.']);
         }
 
@@ -93,8 +95,8 @@ class DeliveryService
                 $delivery->status = 'ASSIGNED';
                 DeliveryEvent::create([
                     'delivery_id' => $delivery->id,
-                    'status' => 'ASSIGNED',
-                    'note'   => "Assigned to user #{$userId}",
+                    'status'      => 'ASSIGNED',
+                    'note'        => "Assigned to user #{$userId}",
                     'occurred_at' => now(),
                 ]);
             }
@@ -110,7 +112,7 @@ class DeliveryService
         $allowed = self::TRANSITIONS[$delivery->status] ?? [];
         if (! in_array($nextStatus, $allowed, true)) {
             throw ValidationException::withMessages([
-                'status' => "Transisi status tidak valid: {$delivery->status} → {$nextStatus}"
+                'status' => "Transisi status tidak valid: {$delivery->status} → {$nextStatus}",
             ]);
         }
 
@@ -120,15 +122,15 @@ class DeliveryService
                 $path = $photo->store("deliveries/{$delivery->id}/events", 'public');
 
                 /** @var FilesystemAdapter $public */
-                $public = Storage::disk('public');
+                $public   = Storage::disk('public');
                 $photoUrl = $public->url($path);
             }
 
             DeliveryEvent::create([
                 'delivery_id' => $delivery->id,
-                'status' => $nextStatus,
-                'note'   => $note,
-                'photo_url' => $photoUrl,
+                'status'      => $nextStatus,
+                'note'        => $note,
+                'photo_url'   => $photoUrl,
                 'occurred_at' => now(),
             ]);
 
@@ -143,6 +145,10 @@ class DeliveryService
             // COD sync ketika delivered
             if ($nextStatus === 'DELIVERED') {
                 $this->maybeSyncCOD($delivery);
+
+                /** @var FeeService $feeService */
+                $feeService = app(FeeService::class);
+                $feeService->generateForDeliveredDelivery($delivery->fresh(['order']));
             }
 
             return $delivery->fresh(['events', 'courier', 'order']);
@@ -156,15 +162,15 @@ class DeliveryService
             $path = $photo->store("deliveries/{$delivery->id}/events", 'public');
 
             /** @var FilesystemAdapter $public */
-            $public = Storage::disk('public');
+            $public   = Storage::disk('public');
             $photoUrl = $public->url($path);
         }
 
         return DeliveryEvent::create([
             'delivery_id' => $delivery->id,
-            'status' => $status,
-            'note'   => $note,
-            'photo_url' => $photoUrl,
+            'status'      => $status,
+            'note'        => $note,
+            'photo_url'   => $photoUrl,
             'occurred_at' => now(),
         ]);
     }
@@ -176,17 +182,17 @@ class DeliveryService
 
         // contoh logika umum: hanya jika metode COD & belum lunas
         if (($order->payment_method ?? null) === 'COD') {
-            $unpaid = max(0.0, (float)$order->grand_total - (float)$order->paid_total);
+            $unpaid = max(0.0, (float) $order->grand_total - (float) $order->paid_total);
             if ($unpaid > 0) {
                 /** @var CheckoutService $checkout */
                 $checkout = app(CheckoutService::class);
 
                 // Salurkan lewat jalur resmi → akan record payment + recompute + set PAID + kurangi stok + generate fee
                 $checkout->addPayment($order, [
-                    'method'  => 'CASH',
-                    'amount'  => $unpaid,
-                    'status'  => 'SUCCESS',
-                    'paid_at' => now(),
+                    'method'       => 'CASH',
+                    'amount'       => $unpaid,
+                    'status'       => 'SUCCESS',
+                    'paid_at'      => now(),
                     'payload_json' => [
                         // opsional: mapping holder kas bila kamu pakai CashService mirror
                         // 'holder_id' => $someHolderId,
@@ -200,46 +206,59 @@ class DeliveryService
     public function buildSuratJalanHtml(Delivery $d): string
     {
         Log::info('SJ_HTML_BUILD_START', ['delivery_id' => $d->id]);
-        // eager minimal bila belum
+
         $d->load([
             'order' => function ($qo) {
-                $qo->select('id', 'kode', 'cabang_id', 'subtotal', 'discount', 'grand_total', 'paid_total', 'status', 'created_at')
+                $qo->select(
+                    'id',
+                    'kode',
+                    'cabang_id',
+                    'customer_id',
+                    'customer_name',
+                    'customer_phone',
+                    'customer_address',
+                    'subtotal',
+                    'discount',
+                    'grand_total',
+                    'paid_total',
+                    'status',
+                    'created_at'
+                )
                     ->with([
                         'items' => fn($qi) => $qi->select(
                             'id',
                             'order_id',
-                            DB::raw('name_snapshot AS name'),
+                            'name_snapshot',
                             'qty',
                             'price',
-                            DB::raw('NULL::text AS note') // kolom note tdk ada
+                            DB::raw('NULL::text AS note')
                         ),
-                        'customer:id,name,phone,address',
-                        // cabang di poin #2 (lihat di bawah)
+                        'customer:id,nama,phone,alamat',
+                        'cabang:id,nama,alamat,telepon',
                     ]);
             },
-            // 'branch' → hapus (lihat poin #2)
             'courier:id,name,phone',
         ]);
 
         Log::info('SJ_HTML_BUILD_DATA', [
-            'delivery_id'   => $d->id,
-            'order_id'      => optional($d->order)->id,
-            'order_kode'    => optional($d->order)->kode,
-            'subtotal'      => optional($d->order)->subtotal,
-            'discount'      => optional($d->order)->discount,
-            'grand_total'   => optional($d->order)->grand_total,
-            'paid_total'    => optional($d->order)->paid_total,
-            'status'        => optional($d->order)->status,
-            'items_count'   => optional($d->order?->items)->count() ?? 0,
+            'delivery_id' => $d->id,
+            'order_id'    => optional($d->order)->id,
+            'order_kode'  => optional($d->order)->kode,
+            'subtotal'    => optional($d->order)->subtotal,
+            'discount'    => optional($d->order)->discount,
+            'grand_total' => optional($d->order)->grand_total,
+            'paid_total'  => optional($d->order)->paid_total,
+            'status'      => optional($d->order)->status,
+            'items_count' => optional($d->order?->items)->count() ?? 0,
         ]);
 
         $order   = $d->order;
-        $branch  = $d->branch;
+        $branch  = $order?->cabang;
         $courier = $d->courier;
 
-        $branchName  = $branch->name  ?? 'Cabang';
-        $branchAddr  = $branch->address ?? '-';
-        $branchPhone = $branch->phone ?? '-';
+        $branchName  = $branch->nama ?? 'Cabang';
+        $branchAddr  = $branch->alamat ?? '-';
+        $branchPhone = $branch->telepon ?? '-';
 
         $sjNumber = $d->sj_number ?: $this->fallbackSJNumber($d);
         $now      = now()->format('Y-m-d H:i');
@@ -248,43 +267,53 @@ class DeliveryService
         $orderCode = $order->kode ?? ('ORD#' . $order->id);
         $orderDate = optional($order->created_at)->format('Y-m-d H:i') ?? '-';
 
-        $customerName  = optional($order->customer)->name  ?? '-';
-        $customerPhone = optional($order->customer)->phone ?? '-';
-        $pickupAddr    = $d->pickup_address   ?? (optional($order->customer)->address ?? '-');
-        $deliveryAddr  = $d->delivery_address ?? (optional($order->customer)->address ?? '-');
+        $customerName = $order->customer_name ?? optional($order->customer)->nama ?? '-';
 
-        $grand = (float)($order->grand_total ?? 0);
-        $paid  = (float)($order->paid_total ?? 0);
+        $customerPhone = $order->customer_phone ?? optional($order->customer)->phone ?? '-';
+
+        $customerAddress = $order->customer_address ?? optional($order->customer)->alamat ?? '-';
+
+        $pickupAddr   = $d->pickup_address ?? $customerAddress;
+        $deliveryAddr = $d->delivery_address ?? $customerAddress;
+
+        $grand  = (float) ($order->grand_total ?? 0);
+        $paid   = (float) ($order->paid_total ?? 0);
         $dueAmt = max($grand - $paid, 0);
 
         $paymentStatus = $dueAmt <= 0.00001 ? 'PAID' : ($paid > 0 ? 'PARTIAL' : 'UNPAID');
-        $codInfo = $dueAmt > 0 ? (' (COD: ' . $this->fmtMoney($dueAmt) . ')') : '';
+        $codInfo       = $dueAmt > 0 ? (' (COD: ' . $this->fmtMoney($dueAmt) . ')') : '';
 
-        // Items table
+// Items table
         $rows = '';
         foreach (($order->items ?? []) as $i => $it) {
-            $name  = $this->e($it->name ?? $it->product_name ?? $it->item_name ?? ('Item #' . $it->id));
-            $qty   = (int)($it->qty ?? 1);
+            $rawName = $it->name_snapshot ?? $it->name ?? $it->product_name ?? $it->item_name ?? null;
+
+            $name = $this->e(
+                filled($rawName) ? (string) $rawName : ('Item #' . $it->id)
+            );
+
+            $qty   = (float) ($it->qty ?? 1);
             $note  = $this->e($it->note ?? '');
             $price = isset($it->price) ? $this->fmtMoney($it->price) : '';
-            $sub   = (isset($it->price) ? $this->fmtMoney($it->price * $qty) : '');
+            $sub   = isset($it->price) ? $this->fmtMoney(((float) $it->price) * $qty) : '';
+
             $rows .= "<tr>
-                <td>" . ($i + 1) . "</td>
-                <td>{$name}" . ($note ? "<br/><small>{$note}</small>" : "") . "</td>
-                <td style='text-align:center'>{$qty}</td>
-                <td style='text-align:right'>{$price}</td>
-                <td style='text-align:right'>{$sub}</td>
-            </tr>";
+        <td>" . ($i + 1) . "</td>
+        <td>{$name}" . ($note ? "<br/><small>{$note}</small>" : "") . "</td>
+        <td style='text-align:center'>" . rtrim(rtrim(number_format($qty, 2, ',', '.'), '0'), ',') . "</td>
+        <td style='text-align:right'>{$price}</td>
+        <td style='text-align:right'>{$sub}</td>
+    </tr>";
         }
 
         $totals = '';
         if (isset($order->grand_total)) {
-            $subtotal = isset($order->subtotal)     ? $this->fmtMoney($order->subtotal) : '';
-            $discount = isset($order->discount)     ? $this->fmtMoney($order->discount) : '';
-            $tax      = isset($order->tax)          ? $this->fmtMoney($order->tax) : '';
-            $service  = isset($order->service_fee)  ? $this->fmtMoney($order->service_fee) : '';
+            $subtotal = isset($order->subtotal) ? $this->fmtMoney($order->subtotal) : '';
+            $discount = isset($order->discount) ? $this->fmtMoney($order->discount) : '';
+            $tax      = isset($order->tax) ? $this->fmtMoney($order->tax) : '';
+            $service  = isset($order->service_fee) ? $this->fmtMoney($order->service_fee) : '';
             $grand    = $this->fmtMoney($order->grand_total ?? 0);
-            $paid     = isset($order->paid_total)   ? $this->fmtMoney($order->paid_total) : '';
+            $paid     = isset($order->paid_total) ? $this->fmtMoney($order->paid_total) : '';
             $dueAmt   = max(($order->grand_total ?? 0) - ($order->paid_total ?? 0), 0);
             $due      = $this->fmtMoney($dueAmt);
 
@@ -298,8 +327,22 @@ class DeliveryService
     <tr><td colspan='3'></td><td>Sisa/COD</td><td style='text-align:right'>{$due}</td></tr>";
         }
 
-        $qrText = url("/deliveries/{$d->id}/note");
+        $qrText      = url("/deliveries/{$d->id}/note");
         $courierLine = $courier ? $this->e("{$courier->name} (WA: {$courier->phone})") : '-';
+
+        $sjNumberEsc      = $this->e($sjNumber);
+        $branchNameEsc    = $this->e($branchName);
+        $branchAddrEsc    = $this->e($branchAddr);
+        $branchPhoneEsc   = $this->e($branchPhone);
+        $nowEsc           = $this->e($now);
+        $typeEsc          = $this->e($type);
+        $paymentStatusEsc = $this->e($paymentStatus);
+        $codInfoEsc       = $this->e($codInfo);
+        $orderCodeEsc     = $this->e($orderCode);
+        $orderDateEsc     = $this->e($orderDate);
+        $pickupAddrEsc    = $this->e($pickupAddr);
+        $deliveryAddrEsc  = $this->e($deliveryAddr);
+        $qrTextEsc        = $this->e($qrText);
 
         Log::info('SJ_HTML_BUILD_DONE', ['delivery_id' => $d->id]);
         return <<<HTML
@@ -307,7 +350,7 @@ class DeliveryService
 <html>
 <head>
 <meta charset="utf-8">
-<title>Surat Jalan {$this->e($sjNumber)}</title>
+<title>Surat Jalan {$sjNumberEsc}</title>
 <style>
   body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; font-size: 12px; color: #111; }
   .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
@@ -331,14 +374,14 @@ class DeliveryService
 <div class="wrap">
   <div class="header row">
     <div class="col">
-      <div><strong>{$this->e($branchName)}</strong></div>
-      <div class="muted">{$this->e($branchAddr)}</div>
-      <div class="muted">Tel: {$this->e($branchPhone)}</div>
+        <div><strong>{$branchNameEsc}</strong></div>
+        <div class="muted">{$branchAddrEsc}</div>
+        <div class="muted">Tel: {$branchPhoneEsc}</div>
     </div>
     <div class="col" style="text-align:right;">
       <h1>SURAT JALAN</h1>
-      <div class="meta">No: <b>{$this->e($sjNumber)}</b></div>
-      <div class="meta">Dicetak: {$this->e($now)}</div>
+        <div class="meta">No: <b>{$sjNumberEsc}</b></div>
+        <div class="meta">Dicetak: {$nowEsc}</div>
     </div>
   </div>
 
@@ -346,16 +389,16 @@ class DeliveryService
 
   <table>
     <tr>
-      <th style="width: 25%;">Tipe</th><td>{$this->e($type)}</td>
-      <th style="width: 25%;">Status Pembayaran</th><td>{$this->e($paymentStatus)}{$this->e($codInfo)}</td>
+        <th style="width: 25%;">Tipe</th><td>{$typeEsc}</td>
+        <th style="width: 25%;">Status Pembayaran</th><td>{$paymentStatusEsc}{$codInfoEsc}</td>
     </tr>
     <tr>
-      <th>Ref Order</th><td>{$this->e($orderCode)} ({$this->e($orderDate)})</td>
-      <th>Kurir</th><td>{$courierLine}</td>
+        <th>Ref Order</th><td>{$orderCodeEsc} ({$orderDateEsc})</td>
+        <th>Kurir</th><td>{$courierLine}</td>
     </tr>
     <tr>
-      <th>Alamat Pickup</th><td>{$this->e($pickupAddr)}</td>
-      <th>Alamat Delivery</th><td>{$this->e($deliveryAddr)}</td>
+        <th>Alamat Pickup</th><td>{$pickupAddrEsc}</td>
+        <th>Alamat Delivery</th><td>{$deliveryAddrEsc}</td>
     </tr>
   </table>
 
@@ -379,7 +422,7 @@ class DeliveryService
     <div class="col">
       <div><b>Checklist</b></div>
       <div class="muted">[ ] Jumlah paket cocok<br/>[ ] Segel/packaging aman<br/>[ ] Catatan khusus diikuti</div>
-      <div class="qr">QR: {$this->e($qrText)}</div>
+        <div class="qr">QR: {$qrTextEsc}</div>
     </div>
     <div class="col">
       <div><b>Tanda Terima</b></div>
@@ -407,12 +450,12 @@ HTML;
                         'items' => fn($qi) => $qi->select(
                             'id',
                             'order_id',
-                            DB::raw('name_snapshot AS name'),
+                            'name_snapshot',
                             'qty',
                             'price',
                             DB::raw('NULL::text AS note')
                         ),
-                        'customer:id,name,phone,address',
+                        'customer:id,nama,phone,alamat',
                     ]);
             },
         ]);
@@ -432,26 +475,31 @@ HTML;
         $ocode = $order->kode ?? ('ORD#' . $order->id);
         $odate = optional($order->created_at)->format('Y-m-d H:i') ?? '-';
 
-        $cust   = optional($order->customer)->name ?? '-';
-        $cphone = optional($order->customer)->phone ?? '-';
-        $pick   = $d->pickup_address   ?? (optional($order->customer)->address ?? '-');
-        $drop   = $d->delivery_address ?? (optional($order->customer)->address ?? '-');
+        $cust = $order->customer_name ?? optional($order->customer)->nama ?? '-';
 
-        $grand = (float)($order->grand_total ?? 0);
-        $paid  = (float)($order->paid_total ?? 0);
+        $cphone = $order->customer_phone ?? optional($order->customer)->phone ?? '-';
+
+        $customerAddress = $order->customer_address ?? optional($order->customer)->alamat ?? '-';
+
+        $pick = $d->pickup_address ?? $customerAddress;
+        $drop = $d->delivery_address ?? $customerAddress;
+
+        $grand = (float) ($order->grand_total ?? 0);
+        $paid  = (float) ($order->paid_total ?? 0);
         $due   = max($grand - $paid, 0);
         $paySt = $due <= 0.00001 ? 'PAID' : ($paid > 0 ? 'PARTIAL' : 'UNPAID');
         $cod   = $due > 0 ? (' (COD: ' . $this->fmtMoney($due) . ')') : '';
 
         $items = $order->items ?? [];
-        $summ  = $items ? implode(', ', array_map(
-            fn($it) => (($it->name ?? $it->product_name ?? $it->item_name ?? 'Item') . ' x' . (int)($it->qty ?? 1)),
-            $items
-        )) : '-';
+        $summ  = $items ? implode(', ', array_map(function ($it) {
+            $rawName = $it->name_snapshot ?? $it->name ?? $it->product_name ?? $it->item_name ?? 'Item';
+
+            return $rawName . ' x' . rtrim(rtrim(number_format((float) ($it->qty ?? 1), 2, ',', '.'), '0'), ',');
+        }, $items)) : '-';
 
         $noteUrl = url("/deliveries/{$d->id}/note");
         $maps    = $d->maps_url ?? '';
-        $notes   = trim((string)($d->notes ?? ''));
+        $notes   = trim((string) ($d->notes ?? ''));
 
         $text = "Surat Jalan #{$sj}\n"
             . "Tipe: {$type}\n"
@@ -486,21 +534,21 @@ HTML;
                             'price',
                             DB::raw('NULL::text AS note')
                         ),
-                        'customer:id,name,phone,address',
+                        'customer:id,nama,phone,alamat',
                     ]);
             },
         ]);
 
         Log::info('SJ_WA_SEND_DATA', [
-            'delivery_id' => $d->id,
-            'courier_id'  => optional($d->courier)->id,
+            'delivery_id'   => $d->id,
+            'courier_id'    => optional($d->courier)->id,
             'courier_phone' => optional($d->courier)->phone,
-            'order_id'    => optional($d->order)->id,
-            'order_kode'  => optional($d->order)->kode,
+            'order_id'      => optional($d->order)->id,
+            'order_kode'    => optional($d->order)->kode,
         ]);
 
         $courier = $d->courier;
-        if (!$courier || !$courier->phone) {
+        if (! $courier || ! $courier->phone) {
             return ['message' => 'Nomor WhatsApp kurir tidak tersedia'];
         }
 
@@ -525,8 +573,8 @@ HTML;
         }
 
         // Set nomor SJ saat pertama kali kirim (opsional)
-        if (!$d->sj_number) {
-            $d->sj_number   = $this->generateSJNumber($d);
+        if (! $d->sj_number) {
+            $d->sj_number    = $this->generateSJNumber($d);
             $d->sj_issued_at = now();
             $d->save();
         }
@@ -538,7 +586,7 @@ HTML;
 
     protected function sanitizePhone(?string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', (string)$phone);
+        $digits = preg_replace('/\D+/', '', (string) $phone);
         if (\Illuminate\Support\Str::startsWith($digits, '0')) {
             $digits = '62' . substr($digits, 1);
         }
@@ -550,9 +598,9 @@ HTML;
         return 'https://wa.me/' . $phone . '?text=' . rawurlencode($text);
     }
 
-    protected function fmtMoney(float|int $n): string
+    protected function fmtMoney(float | int $n): string
     {
-        return 'Rp ' . number_format((float)$n, 0, ',', '.');
+        return 'Rp ' . number_format((float) $n, 0, ',', '.');
     }
 
     protected function e(string $s): string
@@ -566,7 +614,7 @@ HTML;
         $nm = $d->order?->cabang?->nama ?? 'CABANG';
         // bikin 2–3 huruf kode dari nama cabang
         $code = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $nm), 0, 3)) ?: 'CBG';
-        return 'SJ-' . $code . '-' . now()->format('Ymd') . '-' . str_pad((string)$d->id, 5, '0', STR_PAD_LEFT);
+        return 'SJ-' . $code . '-' . now()->format('Ymd') . '-' . str_pad((string) $d->id, 5, '0', STR_PAD_LEFT);
     }
 
     protected function generateSJNumber(Delivery $d): string

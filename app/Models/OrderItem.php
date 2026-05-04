@@ -1,9 +1,9 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\OrderItemLotAllocation;
 
 class OrderItem extends Model
 {
@@ -14,7 +14,7 @@ class OrderItem extends Model
         'price',
         'discount',
         'qty',
-        'line_total'
+        'line_total',
     ];
 
     protected $casts = [
@@ -47,5 +47,10 @@ class OrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    public function lotAllocations()
+    {
+        return $this->hasMany(OrderItemLotAllocation::class, 'order_item_id');
     }
 }

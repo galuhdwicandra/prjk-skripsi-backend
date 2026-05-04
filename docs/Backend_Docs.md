@@ -1,6 +1,6 @@
 # Dokumentasi Backend (FULL Source)
 
-_Dihasilkan otomatis: 2026-04-10 10:02:01_  
+_Dihasilkan otomatis: 2026-05-04 17:39:12_  
 **Root:** `/home/galuhdwicandra/workspace/clone_prime/backend`
 
 
@@ -831,8 +831,8 @@ class CustomersController extends Controller
 
 ### app/Http/Controllers/Api/DashboardController.php
 
-- SHA: `2fe82c52809d`  
-- Ukuran: 3 KB  
+- SHA: `35d202c4361f`  
+- Ukuran: 4 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `DashboardController` extends `Controller`**
@@ -843,33 +843,34 @@ Metode Publik:
 - **chart7d**(Request $rq)
 - **topProducts**(CommonQuery $rq)
 - **lowStock**(CommonQuery $rq)
+- **latestOrders**(CommonQuery $rq)
 - **quickActions**(Request $rq)
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\CommonQuery;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
-    public function __construct(private DashboardService $svc) {}
+    public function __construct(private DashboardService $svc)
+    {}
 
     private function ok($data, $meta = [], $message = 'OK')
     {
         return response()->json([
-            'data' => $data,
-            'meta' => $meta,
+            'data'    => $data,
+            'meta'    => $meta,
             'message' => $message,
-            'errors' => (object) [],
+            'errors'  => (object) [],
         ]);
     }
 
@@ -877,8 +878,8 @@ class DashboardController extends Controller
     {
         Gate::authorize('view', 'dashboard');
         [$from, $to] = $rq->dateRange();
-        $cabangId = $rq->branchIdOrUser(); // still reading "branch_id" from query param
-        $out = $this->svc->kpis($cabangId, $from, $to);
+        $cabangId    = $rq->branchIdOrUser(); // still reading "branch_id" from query param
+        $out         = $this->svc->kpis($cabangId, $from, $to);
 
         $this->auditView('dashboard.kpis', ['cabang_id' => $cabangId, 'from' => $from, 'to' => $to]);
         return $this->ok($out, ['from' => $from->toDateTimeString(), 'to' => $to->toDateTimeString()]);
@@ -900,8 +901,8 @@ class DashboardController extends Controller
     {
         Gate::authorize('view', 'dashboard');
         $cabangId = $rq->branchIdOrUser();
-        $limit = (int) ($rq->integer('limit') ?? 5);
-        $out = $this->svc->topProducts($cabangId, $limit);
+        $limit    = (int) ($rq->integer('limit') ?? 5);
+        $out      = $this->svc->topProducts($cabangId, $limit);
 
         $this->auditView('dashboard.topProducts', ['cabang_id' => $cabangId, 'limit' => $limit]);
         return $this->ok($out, ['limit' => $limit]);
@@ -910,19 +911,40 @@ class DashboardController extends Controller
     public function lowStock(CommonQuery $rq)
     {
         Gate::authorize('view', 'dashboard');
-        $cabangId = $rq->branchIdOrUser();
+        $cabangId  = $rq->branchIdOrUser();
         $threshold = $rq->input('threshold') !== null ? (float) $rq->input('threshold') : null;
-        $out = $this->svc->lowStock($cabangId, $threshold);
+        $out       = $this->svc->lowStock($cabangId, $threshold);
 
         $this->auditView('dashboard.lowStock', ['cabang_id' => $cabangId, 'threshold' => $threshold]);
         return $this->ok($out, ['threshold' => $threshold]);
+    }
+
+    public function latestOrders(CommonQuery $rq)
+    {
+        Gate::authorize('view', 'dashboard');
+
+        $cabangId = $rq->branchIdOrUser();
+        $limit    = min(max((int) ($rq->integer('limit') ?: 8), 1), 20);
+
+        $out = $this->svc->latestOrders($cabangId, $limit);
+
+        $this->auditView('dashboard.latestOrders.today', [
+            'cabang_id' => $cabangId,
+            'limit'     => $limit,
+            'date'      => now()->toDateString(),
+        ]);
+
+        return $this->ok($out, [
+            'limit' => $limit,
+            'date'  => now()->toDateString(),
+        ]);
     }
 
     public function quickActions(Request $rq)
     {
         Gate::authorize('view', 'dashboard');
         $cabangId = $rq->integer('branch_id') ?: ($rq->user()->cabang_id ?? null);
-        $out = $this->svc->quickActions($cabangId);
+        $out      = $this->svc->quickActions($cabangId);
 
         $this->auditView('dashboard.quickActions', ['cabang_id' => $cabangId]);
         return $this->ok($out);
@@ -952,7 +974,7 @@ class DashboardController extends Controller
 
 ### app/Http/Controllers/Api/DeliveriesController.php
 
-- SHA: `b804f1a9c1cb`  
+- SHA: `9fbf0bcda759`  
 - Ukuran: 7 KB  
 - Namespace: `App\Http\Controllers\Api`
 
@@ -972,13 +994,16 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{DeliveryAssignRequest, DeliveryEventStoreRequest, DeliveryStatusRequest, DeliveryStoreRequest};
+use App\Http\Requests\DeliveryAssignRequest;
+use App\Http\Requests\DeliveryEventStoreRequest;
+use App\Http\Requests\DeliveryStatusRequest;
+use App\Http\Requests\DeliveryStoreRequest;
 use App\Http\Requests\Deliveries\SendDeliveryNoteRequest;
-use App\Models\{Delivery, Order};
+use App\Models\Delivery;
+use App\Models\Order;
 use App\Services\DeliveryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -998,7 +1023,7 @@ class DeliveriesController extends Controller
             ->with([
                 'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
                 'courier:id,name',
-                'events'
+                'events',
             ])
             ->when($req->filled('status'), fn($x) => $x->where('status', $req->string('status')))
             ->when($req->filled('assigned_to'), fn($x) => $x->where('assigned_to', $req->integer('assigned_to')))
@@ -1021,9 +1046,9 @@ class DeliveriesController extends Controller
     public function show(Request $req, int $id)
     {
         $delivery = Delivery::with([
-            'order'   => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
+            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
             'courier:id,name',
-            'events'
+            'events',
         ])->findOrFail($id);
         $this->authorize('view', $delivery);
         return response()->json($delivery);
@@ -1045,7 +1070,7 @@ class DeliveriesController extends Controller
             $delivery->load([
                 'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
                 'courier:id,name',
-                'events'
+                'events',
             ]);
             $delivery = $this->svc->autoAssign($delivery);
         }
@@ -1067,7 +1092,7 @@ class DeliveriesController extends Controller
 
         // balikan lengkap (biar FE bisa refresh tanpa call lain)
         $delivery->load([
-            'order'   => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
+            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
             'courier:id,name',
             'events',
         ]);
@@ -1108,9 +1133,22 @@ class DeliveriesController extends Controller
     public function note(int $id)
     {
         $delivery = Delivery::with([
-            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id', 'subtotal', 'discount', 'grand_total', 'paid_total', 'status', 'created_at')
+            'order' => fn($qo) => $qo->select(
+                'id',
+                'kode',
+                'cabang_id',
+                'customer_id',
+                'customer_name',
+                'customer_phone',
+                'customer_address',
+                'subtotal',
+                'discount',
+                'grand_total',
+                'paid_total',
+                'status',
+                'created_at'
+            )
                 ->with([
-                    // ⬇⬇ perbaiki di sini
                     'items' => fn($qi) => $qi->select(
                         'id',
                         'order_id',
@@ -1119,8 +1157,8 @@ class DeliveriesController extends Controller
                         'price',
                         DB::raw('NULL::text AS note')
                     ),
-                    'customer:id,name,phone,address',
-                    'cabang:id,code,name,address,phone'
+                    'customer:id,nama,phone,alamat',
+                    'cabang:id,nama,alamat,telepon',
                 ]),
             'courier:id,name,phone',
         ])->findOrFail($id);
@@ -1129,20 +1167,34 @@ class DeliveriesController extends Controller
 
         if (is_null($delivery->assigned_to)) {
             return response()->json([
-                'message' => 'Surat Jalan tersedia setelah kurir di-assign.'
+                'message' => 'Surat Jalan tersedia setelah kurir di-assign.',
             ], 422);
         }
 
         $html = $this->svc->buildSuratJalanHtml($delivery);
+
         return response($html, 200)->header('Content-Type', 'text/html; charset=UTF-8');
     }
 
     public function sendWa(SendDeliveryNoteRequest $request, int $id)
     {
         $delivery = Delivery::with([
-            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id', 'subtotal', 'discount', 'grand_total', 'paid_total', 'status', 'created_at')
+            'order' => fn($qo) => $qo->select(
+                'id',
+                'kode',
+                'cabang_id',
+                'customer_id',
+                'customer_name',
+                'customer_phone',
+                'customer_address',
+                'subtotal',
+                'discount',
+                'grand_total',
+                'paid_total',
+                'status',
+                'created_at'
+            )
                 ->with([
-                    // ⬇⬇ perbaiki di sini
                     'items' => fn($qi) => $qi->select(
                         'id',
                         'order_id',
@@ -1151,8 +1203,8 @@ class DeliveriesController extends Controller
                         'price',
                         DB::raw('NULL::text AS note')
                     ),
-                    'customer:id,name,phone,address',
-                    'cabang:id,code,name,address,phone'
+                    'customer:id,nama,phone,alamat',
+                    'cabang:id,nama,alamat,telepon',
                 ]),
             'courier:id,name,phone',
         ])->findOrFail($id);
@@ -1160,7 +1212,7 @@ class DeliveriesController extends Controller
         $this->authorize('sendSuratJalan', $delivery);
 
         $message = $request->validated()['message'] ?? null;
-        $res = $this->svc->resendWASuratJalan($delivery, $message);
+        $res     = $this->svc->resendWASuratJalan($delivery, $message);
 
         if (empty($res['wa_url'])) {
             return response()->json($res, 422);
@@ -1508,30 +1560,62 @@ class GudangController extends Controller
 
 ### app/Http/Controllers/Api/Inventory/StockLotController.php
 
-- SHA: `3d430071ed0f`  
-- Ukuran: 3 KB  
+- SHA: `a39030f00561`  
+- Ukuran: 4 KB  
 - Namespace: `App\Http\Controllers\Api\Inventory`
 
 **Class `StockLotController` extends `Controller`**
 
 Metode Publik:
 - **__construct**(private VariantStockService $service)
+- **index**(Request $r)
 - **store**(Request $r)
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
 <?php
-
 namespace App\Http\Controllers\Api\Inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\StockLot;
 use App\Services\VariantStockService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class StockLotController extends Controller
 {
-    public function __construct(private VariantStockService $service) {}
+    public function __construct(private VariantStockService $service)
+    {}
+
+    // GET /api/v1/stock-lots
+    public function index(Request $r)
+    {
+        $this->authorize('viewAny', \App\Models\VariantStock::class);
+
+        $q = StockLot::query()
+            ->with([
+                'variant:id,product_id,size,type,tester,sku,harga,is_active',
+                'variant.product:id,nama',
+                'gudang:id,nama',
+                'cabang:id,nama',
+            ])
+            ->when($r->filled('cabang_id'), fn($x) => $x->where('cabang_id', $r->integer('cabang_id')))
+            ->when($r->filled('gudang_id'), fn($x) => $x->where('gudang_id', $r->integer('gudang_id')))
+            ->when($r->filled('product_variant_id'), fn($x) => $x->where('product_variant_id', $r->integer('product_variant_id')))
+            ->when($r->filled('only_available'), function ($x) use ($r) {
+                if ($r->boolean('only_available')) {
+                    $x->where('qty_remaining', '>', 0);
+                }
+            })
+            ->orderByRaw('COALESCE(received_at, created_at) ASC, id ASC');
+
+        return response()->json([
+            'data'    => $q->get(),
+            'meta'    => [],
+            'message' => 'OK',
+            'errors'  => [],
+        ]);
+    }
 
     // POST /api/v1/stock-lots
     public function store(Request $r)
@@ -1561,16 +1645,16 @@ class StockLotController extends Controller
 
         // Panggil service (service sudah mengelola transaksi DB)
         $lot = $this->service->receiveLot(
-            (int) $v['gudang_id'],          // 1) gudangId
-            (int) $v['product_variant_id'], // 2) variantId
-            (int) $v['qty'],                // 3) qty
-            $v['lot_no'] ?? null,           // 4) lotNo (boleh null → auto-generate di service)
-            $v['received_at'],              // 5) receivedAt (YYYY-MM-DD)
-            $v['expires_at'] ?? null,       // 6) expiresAt (YYYY-MM-DD|null)
+            (int) $v['gudang_id'],                                   // 1) gudangId
+            (int) $v['product_variant_id'],                          // 2) variantId
+            (int) $v['qty'],                                         // 3) qty
+            $v['lot_no'] ?? null,                                    // 4) lotNo (boleh null → auto-generate di service)
+            $v['received_at'],                                       // 5) receivedAt (YYYY-MM-DD)
+            $v['expires_at'] ?? null,                                // 6) expiresAt (YYYY-MM-DD|null)
             isset($v['unit_cost']) ? (float) $v['unit_cost'] : null, // 7) unitCost
-            $v['note'] ?? null,             // 8) note
-            $v['ref_type'] ?? null,         // 9) refType
-            $v['ref_id'] ?? null            // 10) refId
+            $v['note'] ?? null,                                      // 8) note
+            $v['ref_type'] ?? null,                                  // 9) refType
+            $v['ref_id'] ?? null                                     // 10) refId
         );
 
         return response()->json(['data' => $lot], 201);
@@ -2078,8 +2162,8 @@ class OrderController extends Controller
 
 ### app/Http/Controllers/Api/OrdersController.php
 
-- SHA: `f41c2838e3eb`  
-- Ukuran: 3 KB  
+- SHA: `c1097acc06a6`  
+- Ukuran: 5 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `OrdersController` extends `Controller`**
@@ -2096,30 +2180,29 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OrderSetCashPositionRequest;
 use App\Http\Requests\Orders\IndexOrdersRequest;
-use App\Http\Requests\Orders\UpdateOrderItemsRequest;
 use App\Http\Requests\Orders\ReprintReceiptRequest;
 use App\Http\Requests\Orders\ResendWARequest;
+use App\Http\Requests\Orders\UpdateOrderItemsRequest;
 use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 
 class OrdersController extends Controller
 {
-    public function __construct(private OrderService $service) {}
+    public function __construct(private OrderService $service)
+    {}
 
     public function index(IndexOrdersRequest $req)
     {
         $this->authorize('viewAny', Order::class);
-        $user = $req->user();
+        $user      = $req->user();
         $paginator = $this->service->list(
             $req->validated(),
             $user->role === 'superadmin' ? null : $user->cabang_id
@@ -2131,7 +2214,56 @@ class OrdersController extends Controller
     public function show(Request $req, Order $order)
     {
         $this->authorize('view', $order);
-        return response()->json(['data' => $order->load(['items', 'payments'])]);
+
+        $order->load([
+            'payments',
+            'items.lotAllocations.stockLot' => function ($q) {
+                $q->select([
+                    'id',
+                    'cabang_id',
+                    'gudang_id',
+                    'product_variant_id',
+                    'lot_no',
+                    'received_at',
+                    'expires_at',
+                    'qty_received',
+                    'qty_remaining',
+                    'unit_cost',
+                    'created_at',
+                    'updated_at',
+                ]);
+            },
+        ]);
+
+        $order->items->each(function ($item) {
+            $item->setAttribute(
+                'fifo_allocations',
+                $item->lotAllocations->map(function ($allocation) {
+                    $lot = $allocation->stockLot;
+
+                    return [
+                        'id'            => $allocation->id,
+                        'order_item_id' => $allocation->order_item_id,
+                        'stock_lot_id'  => $allocation->stock_lot_id,
+                        'qty_allocated' => (int) $allocation->qty_allocated,
+                        'unit_cost'     => $allocation->unit_cost,
+                        'lot'           => $lot ? [
+                            'id'            => $lot->id,
+                            'lot_no'        => $lot->lot_no,
+                            'received_at'   => optional($lot->received_at)->toDateString(),
+                            'expires_at'    => optional($lot->expires_at)->toDateString(),
+                            'qty_received'  => (int) $lot->qty_received,
+                            'qty_remaining' => (int) $lot->qty_remaining,
+                            'unit_cost'     => $lot->unit_cost,
+                        ] : null,
+                    ];
+                })->values()
+            );
+
+            unset($item->lotAllocations);
+        });
+
+        return response()->json(['data' => $order]);
     }
 
     public function updateItems(UpdateOrderItemsRequest $req, Order $order)
@@ -2155,7 +2287,7 @@ class OrdersController extends Controller
         $v = $req->validated();
 
         return DB::transaction(function () use ($order, $v) {
-            $before = $order->cash_position;
+            $before               = $order->cash_position;
             $order->cash_position = $v['cash_position']; // CUSTOMER | CASHIER | SALES | ADMIN
             $order->save();
 
@@ -2272,7 +2404,7 @@ class PaymentWebhookController extends Controller
 
 ### app/Http/Controllers/Api/ProductController.php
 
-- SHA: `26fdf663d6ba`  
+- SHA: `8ea74cc822d8`  
 - Ukuran: 2 KB  
 - Namespace: `App\Http\Controllers\Api`
 
@@ -2289,7 +2421,6 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -2301,7 +2432,8 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function __construct(private ProductService $svc) {}
+    public function __construct(private ProductService $svc)
+    {}
 
     public function index(Request $request)
     {
@@ -2311,7 +2443,9 @@ class ProductController extends Controller
 
         $items = $this->svc->list(
             search: $term,
-            perPage: (int) $request->query('per_page', 24)
+            perPage: (int) $request->query('per_page', 24),
+            onlyActive: true,
+            gudangId: $request->filled('gudang_id') ? (int) $request->integer('gudang_id') : null
         );
 
         return response()->json($items);
@@ -2325,7 +2459,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product created',
-            'data' => $product,
+            'data'    => $product,
         ], 201);
     }
 
@@ -2346,7 +2480,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product updated',
-            'data' => $updated,
+            'data'    => $updated,
         ]);
     }
 
@@ -2489,8 +2623,8 @@ class ProductMediaController extends Controller
 
 ### app/Http/Controllers/Api/ProductVariantController.php
 
-- SHA: `f9b0ca0b2d23`  
-- Ukuran: 5 KB  
+- SHA: `cd83fe827641`  
+- Ukuran: 6 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `ProductVariantController` extends `Controller`**
@@ -2507,7 +2641,6 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -2520,63 +2653,85 @@ use Illuminate\Http\Request;
 
 class ProductVariantController extends Controller
 {
-    public function __construct(private ProductService $svc) {}
+    public function __construct(private ProductService $svc)
+    {}
 
     public function search(Request $req)
     {
-        // Pastikan policy Anda punya ability 'viewAny' untuk ProductVariant
         $this->authorize('viewAny', ProductVariant::class);
 
-        // Validasi ringan
         $validated = $req->validate([
             'q'            => ['nullable', 'string', 'max:100'],
             'warehouse_id' => ['nullable', 'integer', 'min:1'],
+            'gudang_id'    => ['nullable', 'integer', 'min:1'],
             'per_page'     => ['nullable', 'integer', 'min:1', 'max:50'],
+            'page'         => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $term        = trim((string)($validated['q'] ?? ''));
-        $warehouseId = $validated['warehouse_id'] ?? null;
-        $perPage     = (int)($validated['per_page'] ?? 10);
+        $term = trim((string) ($validated['q'] ?? ''));
+
+        $warehouseId = $validated['warehouse_id'] ?? $validated['gudang_id'] ?? null;
+
+        $perPage = (int) ($validated['per_page'] ?? 12);
 
         $query = ProductVariant::query()
-            ->with(['product:id,nama,is_active'])          // untuk tampilkan nama produk
+            ->with([
+                'product:id,nama,slug,is_active',
+            ])
             ->where('is_active', true)
-            ->whereHas('product', fn($q) => $q->where('is_active', true));
+            ->whereHas('product', function ($productQuery) {
+                $productQuery->where('is_active', true);
+            });
 
-        // Pencarian fleksibel: sku / size / type / nama produk
         if ($term !== '') {
-            $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $term) . '%';
-            $query->where(function ($w) use ($like) {
-                $w->where('sku', 'like', $like)
-                    ->orWhere('size', 'like', $like)
-                    ->orWhere('type', 'like', $like)
-                    ->orWhereHas('product', fn($p) => $p->where('nama', 'like', $like));
+            $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $term) . '%';
+
+            $query->where(function ($searchQuery) use ($like) {
+                $searchQuery
+                    ->where('sku', 'ILIKE', $like)
+                    ->orWhere('size', 'ILIKE', $like)
+                    ->orWhere('type', 'ILIKE', $like)
+                    ->orWhere('tester', 'ILIKE', $like)
+                    ->orWhereHas('product', function ($productQuery) use ($like) {
+                        $productQuery
+                            ->where('nama', 'ILIKE', $like)
+                            ->orWhere('slug', 'ILIKE', $like);
+                    });
             });
         }
 
-        // Filter gudang opsional: hanya varian yang punya stok di gudang tsb
-        if (!empty($warehouseId)) {
-            $query->whereExists(function ($sub) use ($warehouseId) {
-                $sub->from('variant_stocks')
-                    ->whereColumn('variant_stocks.product_variant_id', 'product_variants.id')
-                    ->where('variant_stocks.gudang_id', $warehouseId);
-            });
+        if (! empty($warehouseId)) {
+            $query->withSum([
+                'stocks as stock_qty' => function ($stockQuery) use ($warehouseId) {
+                    $stockQuery->where('gudang_id', (int) $warehouseId);
+                },
+            ], 'qty');
         }
 
-        $paginator = $query->orderByDesc('id')->paginate($perPage);
+        $paginator = $query
+            ->orderByDesc('id')
+            ->paginate($perPage);
 
-        // Bentuk data seperti yang UI harapkan
-        $data = $paginator->getCollection()->map(function (ProductVariant $v) {
-            $namaProduk = $v->product->nama ?? '';
+        $data = $paginator->getCollection()->map(function (ProductVariant $variant) {
+            $productName = $variant->product?->nama ?? '';
+
             return [
-                'id'        => $v->id,
-                'sku'       => $v->sku,
-                'harga'     => (float) $v->harga,
-                'nama'      => $namaProduk,
-                'full_name' => trim($namaProduk . ' ' . $v->size . ' ' . $v->type),
-                // 'barcode' => $v->barcode ?? null, // aktifkan jika ada kolom barcode
+                'id'         => $variant->id,
+                'product_id' => $variant->product_id,
+                'sku'        => $variant->sku,
+                'harga'      => (float) $variant->harga,
+                'nama'       => $productName,
+                'full_name'  => trim(collect([
+                    $productName,
+                    $variant->size,
+                    $variant->type,
+                    $variant->tester,
+                ])->filter()->implode(' ')),
+                'stock_qty'  => (int) ($variant->stock_qty ?? 0),
+                'image_url'  => $variant->product?->image_url,
+                'media_path' => null,
             ];
-        });
+        })->values();
 
         return response()->json([
             'data'         => $data,
@@ -2584,6 +2739,14 @@ class ProductVariantController extends Controller
             'per_page'     => $paginator->perPage(),
             'total'        => $paginator->total(),
             'last_page'    => $paginator->lastPage(),
+            'meta'         => [
+                'current_page' => $paginator->currentPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+                'last_page'    => $paginator->lastPage(),
+            ],
+            'message'      => 'OK',
+            'errors'       => [],
         ]);
     }
 
@@ -2608,7 +2771,7 @@ class ProductVariantController extends Controller
 
         return response()->json([
             'message' => 'Variant created',
-            'data' => $variant,
+            'data'    => $variant,
         ], 201);
     }
 
@@ -2635,7 +2798,7 @@ class ProductVariantController extends Controller
 
         return response()->json([
             'message' => 'Variant updated',
-            'data' => $updated,
+            'data'    => $updated,
         ]);
     }
 
@@ -2811,8 +2974,8 @@ class SettingsController extends Controller
 
 ### app/Http/Controllers/Api/UserController.php
 
-- SHA: `5ce08cece238`  
-- Ukuran: 2 KB  
+- SHA: `70ff56720776`  
+- Ukuran: 3 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `UserController` extends `Controller`**
@@ -2878,7 +3041,22 @@ class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $user = $this->users->create($request->validated());
+        $actor = $request->user();
+        $data  = $request->validated();
+
+        if ($actor->role === 'admin_cabang') {
+            if (! $actor->cabang_id) {
+                abort(422, 'Akun admin cabang belum memiliki cabang_id.');
+            }
+
+            if (($data['role'] ?? null) === 'superadmin') {
+                abort(403, 'Admin cabang tidak boleh membuat user superadmin.');
+            }
+
+            $data['cabang_id'] = (int) $actor->cabang_id;
+        }
+
+        $user = $this->users->create($data);
 
         return response()->json($user, 201);
     }
@@ -2898,7 +3076,22 @@ class UserController extends Controller
         $target = $this->users->findOrFail($id);
         $this->authorize('update', $target);
 
-        $updated = $this->users->update($target, $request->validated());
+        $actor = $request->user();
+        $data  = $request->validated();
+
+        if ($actor->role === 'admin_cabang') {
+            if (! $actor->cabang_id) {
+                abort(422, 'Akun admin cabang belum memiliki cabang_id.');
+            }
+
+            if (($data['role'] ?? $target->role) === 'superadmin') {
+                abort(403, 'Admin cabang tidak boleh mengubah user menjadi superadmin.');
+            }
+
+            $data['cabang_id'] = (int) $actor->cabang_id;
+        }
+
+        $updated = $this->users->update($target, $data);
         return response()->json($updated);
     }
 
@@ -2918,8 +3111,8 @@ class UserController extends Controller
 
 ### app/Http/Controllers/Api/VariantStockController.php
 
-- SHA: `04f897bc8fcd`  
-- Ukuran: 5 KB  
+- SHA: `5952a8f90fef`  
+- Ukuran: 7 KB  
 - Namespace: `App\Http\Controllers\Api`
 
 **Class `VariantStockController` extends `Controller`**
@@ -2937,17 +3130,16 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\VariantStockStoreRequest;
 use App\Http\Requests\VariantStockAdjustRequest;
+use App\Http\Requests\VariantStockStoreRequest;
 use App\Http\Requests\VariantStockUpdateRequest;
 use App\Models\VariantStock;
 use App\Services\VariantStockService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class VariantStockController extends Controller
 {
@@ -2967,20 +3159,20 @@ class VariantStockController extends Controller
         $q = VariantStock::query()->with(['gudang', 'variant', 'cabang']);
 
         if ($request->filled('cabang_id')) {
-            $q->where('cabang_id', (int)$request->integer('cabang_id'));
+            $q->where('cabang_id', (int) $request->integer('cabang_id'));
         }
         if ($request->filled('gudang_id')) {
-            $q->where('gudang_id', (int)$request->integer('gudang_id'));
+            $q->where('gudang_id', (int) $request->integer('gudang_id'));
         }
         if ($request->filled('product_variant_id')) {
-            $q->where('product_variant_id', (int)$request->integer('product_variant_id'));
+            $q->where('product_variant_id', (int) $request->integer('product_variant_id'));
         }
         if ($request->boolean('low')) {
             $q->whereColumn('qty', '<', 'min_stok');
         }
 
-        $perPage = max(1, (int)$request->integer('per_page', 10));
-        $data = $q->orderBy('id', 'desc')->paginate($perPage);
+        $perPage = max(1, (int) $request->integer('per_page', 10));
+        $data    = $q->orderBy('id', 'desc')->paginate($perPage);
 
         // tambah flag is_low_stock per item
         $data->getCollection()->transform(function ($row) {
@@ -3001,7 +3193,7 @@ class VariantStockController extends Controller
         $stock->is_low_stock = $stock->qty < $stock->min_stok;
 
         return response()->json([
-            'data' => $stock
+            'data' => $stock,
         ]);
     }
 
@@ -3013,33 +3205,52 @@ class VariantStockController extends Controller
         $this->authorize('create', VariantStock::class);
 
         $stock = $this->service->setInitialStock(
-            gudangId: (int)$request->integer('gudang_id'),
-            variantId: (int)$request->integer('product_variant_id'),
-            qty: (int)$request->integer('qty'),
-            minStok: $request->has('min_stok') ? (int)$request->integer('min_stok') : null
+            gudangId: (int) $request->integer('gudang_id'),
+            variantId: (int) $request->integer('product_variant_id'),
+            qty: (int) $request->integer('qty'),
+            minStok: $request->has('min_stok') ? (int) $request->integer('min_stok') : null
         );
 
         $stock->is_low_stock = $stock->qty < $stock->min_stok;
 
         return response()->json([
             'message' => 'Stok awal diset.',
-            'data' => $stock
+            'data'    => $stock,
         ], Response::HTTP_CREATED);
     }
 
-    /**
-     * PATCH /api/v1/stocks/{stock}  (ubah min_stok saja)
-     */
     public function update(VariantStockUpdateRequest $request, VariantStock $stock)
     {
         $this->authorize('update', $stock);
 
-        $updated = $this->service->updateMinStok($stock, (int)$request->integer('min_stok'));
-        $updated->is_low_stock = $updated->qty < $updated->min_stok;
+        $payload = $request->validated();
+
+        if (empty($payload)) {
+            return response()->json([
+                'message' => 'Tidak ada data konfigurasi stok yang dikirim.',
+                'data'    => $stock->load(['gudang', 'variant', 'cabang']),
+            ], 422);
+        }
+
+        $updated = $this->service->updateStockConfig($stock, $payload);
+
+        $reorderPointEff = $updated->reorder_point !== null
+            ? (int) $updated->reorder_point
+            : ($updated->min_stok !== null ? (int) $updated->min_stok : null);
+
+        $updated->is_low_stock = $updated->min_stok !== null
+            ? (int) $updated->qty < (int) $updated->min_stok
+            : false;
+
+        $updated->reorder_point_eff = $reorderPointEff;
+
+        $updated->is_below_rop = $reorderPointEff !== null
+            ? (int) $updated->qty <= $reorderPointEff
+            : false;
 
         return response()->json([
-            'message' => 'Threshold low-stock diperbarui.',
-            'data' => $updated
+            'message' => 'Konfigurasi stok dan ROP diperbarui.',
+            'data'    => $updated,
         ]);
     }
 
@@ -3053,14 +3264,14 @@ class VariantStockController extends Controller
         $updated = $this->service->adjust(
             stock: $stock,
             type: $request->input('type'),
-            amount: (int)$request->integer('amount'),
+            amount: (int) $request->integer('amount'),
             note: $request->input('note')
         );
         $updated->is_low_stock = $updated->qty < $updated->min_stok;
 
         return response()->json([
             'message' => 'Stok berhasil disesuaikan.',
-            'data' => $updated
+            'data'    => $updated,
         ]);
     }
 
@@ -3073,7 +3284,7 @@ class VariantStockController extends Controller
         $stock->delete();
 
         return response()->json([
-            'message' => 'Data stok dihapus.'
+            'message' => 'Data stok dihapus.',
         ]);
     }
 
@@ -3084,30 +3295,62 @@ class VariantStockController extends Controller
         $q = VariantStock::query()->with(['gudang', 'variant', 'cabang']);
 
         if ($request->filled('gudang_id')) {
-            $q->where('gudang_id', (int)$request->integer('gudang_id'));
-        }
-        if ($request->filled('product_variant_id')) {
-            $q->where('product_variant_id', (int)$request->integer('product_variant_id'));
+            $q->where('gudang_id', (int) $request->integer('gudang_id'));
         }
 
-        // Ambil semua kandidat, hitung ROP efektif per baris
+        if ($request->filled('product_variant_id')) {
+            $q->where('product_variant_id', (int) $request->integer('product_variant_id'));
+        }
+
+        // Ambil semua kandidat, lalu hitung ROP efektif per baris.
         $rows = $q->get();
 
-        $rows->transform(function ($row) {
-            $rop = $row->getAttribute('reorder_point')
-                ?? app(\App\Services\StockPlanningService::class)
-                ->estimateReorderPoint($row->gudang_id, $row->product_variant_id);
+        $planning = app(\App\Services\StockPlanningService::class);
 
-            $row->reorder_point_eff = $rop;
-            $row->is_below_rop      = $rop !== null && $row->qty <= $rop;
-            $row->is_low_stock      = $row->qty < $row->min_stok; // tetap sertakan untuk referensi
+        $data = $rows
+            ->map(function (VariantStock $stock) use ($planning) {
+                $manualRop = $stock->reorder_point !== null
+                    ? (int) $stock->reorder_point
+                    : null;
 
-            return $row;
-        });
+                $estimatedRop = null;
 
-        $data = $rows->filter(fn($r) => $r->is_below_rop)->values();
+                if ($manualRop === null) {
+                    $estimatedRop = $planning->estimateReorderPoint(
+                        (int) $stock->gudang_id,
+                        (int) $stock->product_variant_id
+                    );
+                }
 
-        return response()->json(['data' => $data]);
+                $fallbackMinStock = $stock->min_stok !== null
+                    ? (int) $stock->min_stok
+                    : null;
+
+                $reorderPointEff = $manualRop ?? $estimatedRop ?? $fallbackMinStock;
+
+                $stock->reorder_point_eff = $reorderPointEff;
+
+                $stock->is_low_stock = $stock->min_stok !== null
+                    ? (int) $stock->qty < (int) $stock->min_stok
+                    : false;
+
+                $stock->is_below_rop = $reorderPointEff !== null
+                    ? (int) $stock->qty <= (int) $reorderPointEff
+                    : false;
+
+                return $stock;
+            })
+            ->filter(fn(VariantStock $stock) => $stock->is_below_rop)
+            ->values();
+
+        return response()->json([
+            'data'    => $data,
+            'meta'    => [
+                'total' => $data->count(),
+            ],
+            'message' => 'OK',
+            'errors'  => [],
+        ]);
     }
 }
 
@@ -4230,7 +4473,7 @@ class OrderChangeLog extends Model
 
 ### app/Models/OrderItem.php
 
-- SHA: `bcb36ae8399d`  
+- SHA: `2897f9a8b199`  
 - Ukuran: 1 KB  
 - Namespace: `App\Models`
 
@@ -4241,15 +4484,16 @@ Metode Publik:
 - **getNoteAttribute**() : *?string*
 - **order**() : *BelongsTo*
 - **variant**() : *BelongsTo*
+- **lotAllocations**()
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\OrderItemLotAllocation;
 
 class OrderItem extends Model
 {
@@ -4260,7 +4504,7 @@ class OrderItem extends Model
         'price',
         'discount',
         'qty',
-        'line_total'
+        'line_total',
     ];
 
     protected $casts = [
@@ -4294,6 +4538,11 @@ class OrderItem extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
+
+    public function lotAllocations()
+    {
+        return $this->hasMany(OrderItemLotAllocation::class, 'order_item_id');
+    }
 }
 
 ```
@@ -4301,11 +4550,15 @@ class OrderItem extends Model
 
 ### app/Models/OrderItemLotAllocation.php
 
-- SHA: `2ab9380df30c`  
-- Ukuran: 209 B  
+- SHA: `2cd73d38c8c3`  
+- Ukuran: 653 B  
 - Namespace: `App\Models`
 
 **Class `OrderItemLotAllocation` extends `Model`**
+
+Metode Publik:
+- **orderItem**() : *BelongsTo*
+- **stockLot**() : *BelongsTo*
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
@@ -4314,12 +4567,32 @@ class OrderItem extends Model
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItemLotAllocation extends Model
 {
-    protected $fillable = ['order_item_id', 'stock_lot_id', 'qty_allocated', 'unit_cost'];
-}
+    protected $fillable = [
+        'order_item_id',
+        'stock_lot_id',
+        'qty_allocated',
+        'unit_cost',
+    ];
 
+    protected $casts = [
+        'qty_allocated' => 'integer',
+        'unit_cost' => 'decimal:2',
+    ];
+
+    public function orderItem(): BelongsTo
+    {
+        return $this->belongsTo(OrderItem::class, 'order_item_id');
+    }
+
+    public function stockLot(): BelongsTo
+    {
+        return $this->belongsTo(StockLot::class, 'stock_lot_id');
+    }
+}
 ```
 </details>
 
@@ -4539,8 +4812,8 @@ class ProductMedia extends Model
 
 ### app/Models/ProductVariant.php
 
-- SHA: `c3aeddab0fbd`  
-- Ukuran: 666 B  
+- SHA: `3393746a9668`  
+- Ukuran: 729 B  
 - Namespace: `App\Models`
 
 **Class `ProductVariant` extends `Model`**
@@ -4553,9 +4826,9 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Models;
 
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 
 class ProductVariant extends Model
@@ -4571,7 +4844,7 @@ class ProductVariant extends Model
     ];
 
     protected $casts = [
-        'harga' => 'decimal:2',
+        'harga'     => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
@@ -4580,10 +4853,12 @@ class ProductVariant extends Model
         return $this->belongsTo(Product::class);
     }
 
-    // Placeholder relasi stok per gudang (M5)
-    // public function stocks() { ... }
+    public function stocks()
+    {
+        return $this->hasMany(\App\Models\VariantStock::class, 'product_variant_id');
+    }
 
-    /** Scope aktif */
+/** Scope aktif */
     public function scopeActive($q)
     {
         return $q->where('is_active', true);
@@ -4694,8 +4969,8 @@ class Setting extends Model
 
 ### app/Models/StockLot.php
 
-- SHA: `52a93031ca8c`  
-- Ukuran: 1 KB  
+- SHA: `4338ba5cdaf2`  
+- Ukuran: 979 B  
 - Namespace: `App\Models`
 
 **Class `StockLot` extends `Model`**
@@ -4720,7 +4995,7 @@ class StockLot extends Model
         'cabang_id',
         'gudang_id',
         'product_variant_id',
-        'lot_no',            // simpan "LOT-2025..." di sini bila VARCHAR
+        'lot_no',
         'received_at',
         'expires_at',
         'qty_received',
@@ -4887,8 +5162,8 @@ class User extends Authenticatable
 
 ### app/Models/VariantStock.php
 
-- SHA: `cc054eec060b`  
-- Ukuran: 2 KB  
+- SHA: `248b34a2adeb`  
+- Ukuran: 4 KB  
 - Namespace: `App\Models`
 
 **Class `VariantStock` extends `Model`**
@@ -4897,18 +5172,20 @@ Metode Publik:
 - **cabang**()
 - **gudang**()
 - **variant**()
-- **scopeOfCabang**($q, $cabangId)
-- **scopeLowStock**($q)
+- **scopeOfCabang**(Builder $query, int $cabangId) : *Builder*
+- **scopeOfGudang**(Builder $query, int $gudangId) : *Builder*
+- **scopeLowStock**(Builder $query) : *Builder*
+- **scopeBelowRop**(Builder $query) : *Builder*
 - **getIsLowStockAttribute**() : *bool*
 - **getReorderPointEffAttribute**() : *?int*
-- **scopeBelowRop**($q)
+- **getIsBelowRopAttribute**() : *bool*
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
 <?php
-
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class VariantStock extends Model
@@ -4919,14 +5196,34 @@ class VariantStock extends Model
         'product_variant_id',
         'qty',
         'min_stok',
+        'safety_stock',
+        'lead_time_days',
+        'reorder_point',
     ];
 
     protected $casts = [
-        'qty' => 'integer',
-        'min_stok' => 'integer',
+        'cabang_id'          => 'integer',
+        'gudang_id'          => 'integer',
+        'product_variant_id' => 'integer',
+        'qty'                => 'integer',
+        'min_stok'           => 'integer',
+        'safety_stock'       => 'integer',
+        'lead_time_days'     => 'integer',
+        'reorder_point'      => 'integer',
     ];
 
-    // RELATIONS
+    protected $appends = [
+        'is_low_stock',
+        'reorder_point_eff',
+        'is_below_rop',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
+
     public function cabang()
     {
         return $this->belongsTo(Cabang::class, 'cabang_id');
@@ -4942,35 +5239,84 @@ class VariantStock extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
-    // SCOPES
-    public function scopeOfCabang($q, $cabangId)
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeOfCabang(Builder $query, int $cabangId): Builder
     {
-        return $q->where('cabang_id', $cabangId);
+        return $query->where('cabang_id', $cabangId);
     }
 
-    public function scopeLowStock($q)
+    public function scopeOfGudang(Builder $query, int $gudangId): Builder
     {
-        return $q->whereColumn('qty', '<', 'min_stok');
+        return $query->where('gudang_id', $gudangId);
     }
+
+    public function scopeLowStock(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('min_stok')
+            ->whereColumn('qty', '<', 'min_stok');
+    }
+
+    public function scopeBelowRop(Builder $query): Builder
+    {
+        return $query
+            ->where(function (Builder $q) {
+                $q->where(function (Builder $manual) {
+                    $manual
+                        ->whereNotNull('reorder_point')
+                        ->whereColumn('qty', '<=', 'reorder_point');
+                })
+                    ->orWhere(function (Builder $fallback) {
+                        $fallback
+                            ->whereNull('reorder_point')
+                            ->whereNotNull('min_stok')
+                            ->whereColumn('qty', '<=', 'min_stok');
+                    });
+            });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
 
     public function getIsLowStockAttribute(): bool
     {
-        return $this->qty < $this->min_stok;
+        if ($this->min_stok === null) {
+            return false;
+        }
+
+        return (int) $this->qty < (int) $this->min_stok;
     }
 
     public function getReorderPointEffAttribute(): ?int
     {
-        // Prioritas: gunakan kolom 'reorder_point' bila ada, fallback hitung dinamis
-        if (!is_null($this->reorder_point)) return (int)$this->reorder_point;
+        if ($this->reorder_point !== null) {
+            return (int) $this->reorder_point;
+        }
 
-        // Fallback kalkulasi ringan berdasar histori (lihat service di bawah)
-        return app(\App\Services\StockPlanningService::class)
-            ->estimateReorderPoint($this->gudang_id, $this->product_variant_id);
+        if ($this->min_stok !== null) {
+            return (int) $this->min_stok;
+        }
+
+        return null;
     }
 
-    public function scopeBelowRop($q)
+    public function getIsBelowRopAttribute(): bool
     {
-        return $q->whereColumn('qty', '<=', 'reorder_point');
+        $rop = $this->reorder_point_eff;
+
+        if ($rop === null) {
+            return false;
+        }
+
+        return (int) $this->qty <= (int) $rop;
     }
 }
 
@@ -7278,8 +7624,8 @@ class CustomerStoreRequest extends FormRequest
 
 ### app/Http/Requests/Customer/CustomerUpdateRequest.php
 
-- SHA: `74fbdc04ecd6`  
-- Ukuran: 894 B  
+- SHA: `f496190695b2`  
+- Ukuran: 890 B  
 - Namespace: `App\Http\Requests\Customer`
 
 **Class `CustomerUpdateRequest` extends `FormRequest`**
@@ -7307,7 +7653,7 @@ class CustomerUpdateRequest extends FormRequest
     public function rules(): array
     {
         $customer = $this->route('customer');
-        $cabangId = (int)($this->user()->cabang_id);
+        $cabangId = (int)($customer->cabang_id);
 
         return [
             'nama'   => ['required', 'string', 'max:120'],
@@ -8287,8 +8633,8 @@ class OrderUpdateRequest extends FormRequest
 
 ### app/Http/Requests/Orders/IndexOrdersRequest.php
 
-- SHA: `2e8a3f937be1`  
-- Ukuran: 754 B  
+- SHA: `06c5d99a8d33`  
+- Ukuran: 1020 B  
 - Namespace: `App\Http\Requests\Orders`
 
 **Class `IndexOrdersRequest` extends `FormRequest`**
@@ -8300,7 +8646,6 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Http\Requests\Orders;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -8315,13 +8660,18 @@ class IndexOrdersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cabang_id' => ['nullable', 'integer'],
-            'status'    => ['nullable', 'in:DRAFT,UNPAID,PAID,VOID,REFUND'],
-            'date_from' => ['nullable', 'date'],
-            'date_to'   => ['nullable', 'date', 'after_or_equal:date_from'],
-            'search'    => ['nullable', 'string', 'max:120'], // kode/phone/note
-            'page'      => ['nullable', 'integer', 'min:1'],
-            'per_page'  => ['nullable', 'integer', 'min:5', 'max:100'],
+            'cabang_id'     => ['nullable', 'integer'],
+            'status'        => ['nullable', 'in:DRAFT,UNPAID,PAID,VOID,REFUND'],
+            'cash_position' => ['nullable', 'in:CUSTOMER,CASHIER,SALES,ADMIN'],
+            'date_from'     => ['nullable', 'date'],
+            'date_to'       => ['nullable', 'date', 'after_or_equal:date_from'],
+
+            'q'             => ['nullable', 'string', 'max:120'],
+            'search'        => ['nullable', 'string', 'max:120'],
+
+            'sort'          => ['nullable', 'in:ordered_at,-ordered_at,kode,-kode,grand_total,-grand_total'],
+            'page'          => ['nullable', 'integer', 'min:1'],
+            'per_page'      => ['nullable', 'integer', 'min:5', 'max:100'],
         ];
     }
 }
@@ -9037,8 +9387,8 @@ class UploadProductMediaRequest extends FormRequest
 
 ### app/Http/Requests/UserStoreRequest.php
 
-- SHA: `5b5880e97e96`  
-- Ukuran: 853 B  
+- SHA: `5c9c65cd3953`  
+- Ukuran: 874 B  
 - Namespace: `App\Http\Requests`
 
 **Class `UserStoreRequest` extends `FormRequest`**
@@ -9071,7 +9421,7 @@ class UserStoreRequest extends FormRequest
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'string', 'min:8', 'max:190'],
-            'cabang_id' => ['nullable', 'integer', 'min:1'],
+            'cabang_id' => ['nullable', 'integer', 'min:1', 'exists:cabangs,id'],
             'role' => ['required', Rule::in($roles)],
             'is_active' => ['boolean'],
         ];
@@ -9083,7 +9433,7 @@ class UserStoreRequest extends FormRequest
 
 ### app/Http/Requests/UserUpdateRequest.php
 
-- SHA: `4c6f94c14e48`  
+- SHA: `d29250b96c26`  
 - Ukuran: 1 KB  
 - Namespace: `App\Http\Requests`
 
@@ -9129,7 +9479,7 @@ class UserUpdateRequest extends FormRequest
             'phone'     => ['sometimes', 'nullable', 'string', 'max:30'],
             // ⬇️ izinkan null (artinya tidak ganti), min:8 hanya berlaku jika ada nilai
             'password'  => ['sometimes', 'nullable', 'string', 'min:8'],
-            'cabang_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'cabang_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:cabangs,id'],
             'role'      => ['sometimes', Rule::in($roles)],
             'is_active' => ['sometimes', 'boolean'],
         ];
@@ -9226,8 +9576,8 @@ class VariantStockStoreRequest extends FormRequest
 
 ### app/Http/Requests/VariantStockUpdateRequest.php
 
-- SHA: `93fd336969c2`  
-- Ukuran: 327 B  
+- SHA: `ce3e9bf6ea26`  
+- Ukuran: 1 KB  
 - Namespace: `App\Http\Requests`
 
 **Class `VariantStockUpdateRequest` extends `FormRequest`**
@@ -9235,6 +9585,7 @@ class VariantStockStoreRequest extends FormRequest
 Metode Publik:
 - **authorize**() : *bool*
 - **rules**() : *array*
+- **messages**() : *array*
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
@@ -9246,16 +9597,49 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class VariantStockUpdateRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $nullableIntegerFields = [
+            'min_stok',
+            'safety_stock',
+            'lead_time_days',
+            'reorder_point',
+        ];
+
+        foreach ($nullableIntegerFields as $field) {
+            if ($this->has($field) && $this->input($field) === '') {
+                $this->merge([
+                    $field => null,
+                ]);
+            }
+        }
+    }
 
     public function rules(): array
     {
         return [
-            'min_stok' => ['required','integer','min:0'],
+            'min_stok'       => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'safety_stock'   => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'reorder_point'  => ['sometimes', 'nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'min_stok.integer' => 'Minimal stok harus berupa angka.',
+            'safety_stock.integer' => 'Safety stock harus berupa angka.',
+            'lead_time_days.integer' => 'Lead time harus berupa angka.',
+            'reorder_point.integer' => 'Reorder point harus berupa angka.',
         ];
     }
 }
-
 ```
 </details>
 
@@ -9265,8 +9649,8 @@ class VariantStockUpdateRequest extends FormRequest
 
 ### app/Services/AccountingService.php
 
-- SHA: `2e4b264c1fbe`  
-- Ukuran: 8 KB  
+- SHA: `53fc2e520cc2`  
+- Ukuran: 10 KB  
 - Namespace: `App\Services`
 
 **Class `AccountingService`**
@@ -9284,12 +9668,13 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Services;
 
-use App\Models\{Account, FiscalPeriod, JournalEntry, JournalLine};
-use Illuminate\Support\Facades\DB;
+use App\Models\Account;
+use App\Models\FiscalPeriod;
+use App\Models\JournalEntry;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AccountingService
 {
@@ -9326,16 +9711,16 @@ class AccountingService
             // Reset lines lalu isi ulang
             $entry->lines()->delete();
 
-            $sumDebit = 0;
+            $sumDebit  = 0;
             $sumCredit = 0;
             foreach ($payload['lines'] as $i => $line) {
                 /** @var Account $acc */
                 $acc = Account::query()->whereKey($line['account_id'])->first();
-                if (!$acc || !$acc->is_active) {
+                if (! $acc || ! $acc->is_active) {
                     throw new \InvalidArgumentException("Akun tidak aktif/invalid pada baris #" . ($i + 1));
                 }
 
-                $debit  = (float) ($line['debit']  ?? 0);
+                $debit  = (float) ($line['debit'] ?? 0);
                 $credit = (float) ($line['credit'] ?? 0);
                 if ($debit < 0 || $credit < 0) {
                     throw new \InvalidArgumentException("Nilai negatif tidak diperbolehkan (#" . ($i + 1) . ")");
@@ -9394,14 +9779,14 @@ class AccountingService
 
             // Audit
             DB::table('audit_logs')->insert([
-                'actor_type' => 'USER',
-                'actor_id'   => Auth::id(),
-                'action'     => 'JOURNAL_POSTED',
-                'model'      => 'JournalEntry',
-                'model_id'   => $entry->id,
-                'diff_json'  => json_encode(['number' => $entry->number, 'posted_at' => now()->toDateTimeString()]),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'actor_type'  => 'USER',
+                'actor_id'    => Auth::id(),
+                'action'      => 'JOURNAL_POSTED',
+                'model'       => 'JournalEntry',
+                'model_id'    => $entry->id,
+                'diff_json'   => json_encode(['number' => $entry->number, 'posted_at' => now()->toDateTimeString()]),
+                'created_at'  => now(),
+                'updated_at'  => now(),
                 'occurred_at' => now(),
             ]);
 
@@ -9480,12 +9865,25 @@ class AccountingService
             ->where('je.period_year', $year)
             ->where('je.period_month', $month)
             ->where('je.status', 'POSTED')
-            ->whereIn('a.type', ['Revenue', 'Expense'])
-            ->groupBy('a.type')
-            ->selectRaw("a.type, SUM(jl.debit) as debit, SUM(jl.credit) as credit")
-            ->get()->keyBy('type')->all();
+            ->whereIn(DB::raw('UPPER(a.type)'), ['REVENUE', 'EXPENSE'])
+            ->groupBy(DB::raw('UPPER(a.type)'))
+            ->selectRaw("
+            UPPER(a.type) as type,
+            COALESCE(SUM(jl.debit), 0) as debit,
+            COALESCE(SUM(jl.credit), 0) as credit
+        ")
+            ->get();
 
-        return $rows;
+        return [
+            'Revenue' => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'REVENUE'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'REVENUE'))->credit,
+            ],
+            'Expense' => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'EXPENSE'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'EXPENSE'))->credit,
+            ],
+        ];
     }
 
     public function balanceSheet(int $cabangId, int $year, int $month): array
@@ -9497,12 +9895,29 @@ class AccountingService
             ->where('je.period_year', $year)
             ->where('je.period_month', $month)
             ->where('je.status', 'POSTED')
-            ->whereIn('a.type', ['Asset', 'Liability', 'Equity'])
-            ->groupBy('a.type')
-            ->selectRaw("a.type, SUM(jl.debit) as debit, SUM(jl.credit) as credit")
-            ->get()->keyBy('type')->all();
+            ->whereIn(DB::raw('UPPER(a.type)'), ['ASSET', 'LIABILITY', 'EQUITY'])
+            ->groupBy(DB::raw('UPPER(a.type)'))
+            ->selectRaw("
+            UPPER(a.type) as type,
+            COALESCE(SUM(jl.debit), 0) as debit,
+            COALESCE(SUM(jl.credit), 0) as credit
+        ")
+            ->get();
 
-        return $rows;
+        return [
+            'Asset'     => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'ASSET'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'ASSET'))->credit,
+            ],
+            'Liability' => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'LIABILITY'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'LIABILITY'))->credit,
+            ],
+            'Equity'    => [
+                'debit'  => (float) optional($rows->firstWhere('type', 'EQUITY'))->debit,
+                'credit' => (float) optional($rows->firstWhere('type', 'EQUITY'))->credit,
+            ],
+        ];
     }
 }
 
@@ -10664,8 +11079,8 @@ class CustomerService
 
 ### app/Services/DashboardService.php
 
-- SHA: `f08a1b85aaf5`  
-- Ukuran: 7 KB  
+- SHA: `af3e836662d9`  
+- Ukuran: 9 KB  
 - Namespace: `App\Services`
 
 **Class `DashboardService`**
@@ -10676,17 +11091,17 @@ Metode Publik:
 - **chart7d**(?int $cabangId) : *array*
 - **topProducts**(?int $cabangId, int $limit = 5) : *array*
 - **lowStock**(?int $cabangId, ?float $threshold = null) : *array*
+- **latestOrders**(?int $cabangId, int $limit = 8) : *array*
 - **quickActions**(?int $cabangId) : *array*
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
 <?php
-
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
@@ -10712,8 +11127,8 @@ class DashboardService
             $paidCount   = (clone $paidOrders)->count();
             $revenue     = (clone $paidOrders)->sum('grand_total');
 
-            $avgTicket   = $paidCount > 0 ? (float) ($revenue / $paidCount) : 0.0;
-            $paidRate    = $ordersCount > 0 ? round(($paidCount / $ordersCount) * 100, 2) : 0.0;
+            $avgTicket = $paidCount > 0 ? (float) ($revenue / $paidCount) : 0.0;
+            $paidRate  = $ordersCount > 0 ? round(($paidCount / $ordersCount) * 100, 2) : 0.0;
 
             // Reconcile against payments (SUCCESS) in same period and cabang
             $paidViaPayments = DB::table('payments')
@@ -10723,19 +11138,19 @@ class DashboardService
                 ->whereBetween('payments.paid_at', [$from, $to])
                 ->sum('payments.amount');
 
-            $diff = (float) $revenue - (float) $paidViaPayments;
+            $diff         = (float) $revenue - (float) $paidViaPayments;
             $isConsistent = abs($diff) < 0.01;
 
             return [
-                'orders_total' => (int) $ordersCount,
-                'orders_paid'  => (int) $paidCount,
-                'revenue'      => (float) $revenue,
-                'avg_ticket'   => (float) $avgTicket,
+                'orders_total'  => (int) $ordersCount,
+                'orders_paid'   => (int) $paidCount,
+                'revenue'       => (float) $revenue,
+                'avg_ticket'    => (float) $avgTicket,
                 'paid_rate_pct' => (float) $paidRate,
-                'validation'   => [
-                    'paid_amount_sum' => (float) $paidViaPayments,
+                'validation'    => [
+                    'paid_amount_sum'         => (float) $paidViaPayments,
                     'orders_vs_payments_diff' => (float) $diff,
-                    'is_consistent' => $isConsistent,
+                    'is_consistent'           => $isConsistent,
                 ],
             ];
         });
@@ -10743,9 +11158,9 @@ class DashboardService
 
     public function chart7d(?int $cabangId): array
     {
-        $to = now()->endOfDay();
+        $to   = now()->endOfDay();
         $from = now()->subDays(6)->startOfDay();
-        $key = "dash:chart7d:c{$cabangId}:{$from->toDateString()}";
+        $key  = "dash:chart7d:c{$cabangId}:{$from->toDateString()}";
 
         return Cache::store(config('cache.default'))->remember($key, $this->ttl, function () use ($cabangId, $from, $to) {
             $rows = DB::table('orders')
@@ -10756,13 +11171,13 @@ class DashboardService
                 ->orderBy('d')
                 ->get();
 
-            $map = $rows->keyBy('d');
+            $map  = $rows->keyBy('d');
             $days = [];
             for ($i = 0; $i < 7; $i++) {
-                $day = now()->subDays(6 - $i)->toDateString();
+                $day    = now()->subDays(6 - $i)->toDateString();
                 $days[] = [
-                    'date' => $day,
-                    'orders' => (int) ($map[$day]->cnt ?? 0),
+                    'date'    => $day,
+                    'orders'  => (int) ($map[$day]->cnt ?? 0),
                     'revenue' => (float) ($map[$day]->revenue ?? 0),
                 ];
             }
@@ -10787,9 +11202,9 @@ class DashboardService
 
             return $rows->map(fn($r) => [
                 'variant_id' => (int) $r->variant_id,
-                'name' => $r->name,
-                'qty' => (float) $r->qty,
-                'revenue' => (float) $r->revenue,
+                'name'       => $r->name,
+                'qty'        => (float) $r->qty,
+                'revenue'    => (float) $r->revenue,
             ])->all();
         });
     }
@@ -10815,37 +11230,85 @@ class DashboardService
             $rows = $query->orderBy('vs.qty')->limit(50)->get();
 
             return $rows->map(fn($r) => [
-                'gudang_id'    => (int) $r->gudang_id,
-                'variant_id'   => (int) $r->product_variant_id,
-                'sku'          => $r->sku,
-                'name'         => $r->product_name,
-                'qty_on_hand'  => (float) $r->qty,
-                'min_stock'    => (float) $r->min_stok,
+                'gudang_id'   => (int) $r->gudang_id,
+                'variant_id'  => (int) $r->product_variant_id,
+                'sku'         => $r->sku,
+                'name'        => $r->product_name,
+                'qty_on_hand' => (float) $r->qty,
+                'min_stock'   => (float) $r->min_stok,
+            ])->all();
+        });
+    }
+
+    public function latestOrders(?int $cabangId, int $limit = 8): array
+    {
+        $limit = min(max($limit, 1), 20);
+
+        $from = now()->startOfDay();
+        $to   = now()->endOfDay();
+
+        $key = "dash:latest-orders:today:c{$cabangId}:l{$limit}:d{$from->toDateString()}";
+
+        return Cache::store(config('cache.default'))->remember($key, $this->ttl, function () use ($cabangId, $limit, $from, $to) {
+            $rows = DB::table('orders as o')
+                ->leftJoin('cabangs as c', 'o.cabang_id', '=', 'c.id')
+                ->when($cabangId, fn($q) => $q->where('o.cabang_id', $cabangId))
+                ->whereBetween('o.ordered_at', [$from, $to])
+                ->select([
+                    'o.id',
+                    'o.kode',
+                    'o.cabang_id',
+                    'c.nama as cabang_nama',
+                    'o.customer_name',
+                    'o.customer_phone',
+                    'o.status',
+                    'o.grand_total',
+                    'o.paid_total',
+                    'o.cash_position',
+                    'o.ordered_at',
+                ])
+                ->orderByDesc('o.ordered_at')
+                ->orderByDesc('o.id')
+                ->limit($limit)
+                ->get();
+
+            return $rows->map(fn($r) => [
+                'id'             => (int) $r->id,
+                'kode'           => $r->kode,
+                'cabang_id'      => (int) $r->cabang_id,
+                'cabang_nama'    => $r->cabang_nama,
+                'customer_name'  => $r->customer_name,
+                'customer_phone' => $r->customer_phone,
+                'status'         => $r->status,
+                'grand_total'    => (float) $r->grand_total,
+                'paid_total'     => (float) $r->paid_total,
+                'cash_position'  => $r->cash_position,
+                'ordered_at'     => $r->ordered_at,
             ])->all();
         });
     }
 
     public function quickActions(?int $cabangId): array
     {
-        $low = $this->lowStock($cabangId, null);
+        $low     = $this->lowStock($cabangId, null);
         $actions = [];
 
-        if (!empty($low)) {
+        if (! empty($low)) {
             $actions[] = [
-                'type' => 'LOW_STOCK',
-                'label' => 'Replenish low stock items',
+                'type'    => 'LOW_STOCK',
+                'label'   => 'Replenish low stock items',
                 'payload' => [
-                    'count' => count($low),
+                    'count'     => count($low),
                     'first_sku' => $low[0]['sku'] ?? null,
                 ],
             ];
         }
 
         $chart = $this->chart7d($cabangId);
-        $y = collect($chart)->firstWhere('date', now()->subDay()->toDateString());
+        $y     = collect($chart)->firstWhere('date', now()->subDay()->toDateString());
         if ($y && $y['orders'] > 0 && $y['revenue'] == 0.0) {
             $actions[] = [
-                'type' => 'PAYMENT_CHECK',
+                'type'  => 'PAYMENT_CHECK',
                 'label' => 'Investigate payments with PENDING/FAILED status',
             ];
         }
@@ -10859,8 +11322,8 @@ class DashboardService
 
 ### app/Services/DeliveryService.php
 
-- SHA: `6b07f5c3078f`  
-- Ukuran: 22 KB  
+- SHA: `484c6504329c`  
+- Ukuran: 23 KB  
 - Namespace: `App\Services`
 
 **Class `DeliveryService`**
@@ -10878,18 +11341,20 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Services;
 
-use App\Models\{Delivery, DeliveryEvent, Order, Payment, User};
+use App\Models\Delivery;
+use App\Models\DeliveryEvent;
+use App\Models\Order;
+use App\Models\User;
+use App\Services\CheckoutService;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Filesystem\FilesystemAdapter;
-use App\Services\CheckoutService;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class DeliveryService
 {
@@ -10913,24 +11378,24 @@ class DeliveryService
 
         return DB::transaction(function () use ($order, $type, $payload) {
             $delivery = new Delivery([
-                'order_id' => $order->id,
-                'type'     => $type,
-                'status'   => 'REQUESTED',
+                'order_id'         => $order->id,
+                'type'             => $type,
+                'status'           => 'REQUESTED',
                 'pickup_address'   => $payload['pickup_address'] ?? null,
                 'delivery_address' => $payload['delivery_address'] ?? null,
-                'pickup_lat'  => $payload['pickup_lat'] ?? null,
-                'pickup_lng'  => $payload['pickup_lng'] ?? null,
-                'delivery_lat' => $payload['delivery_lat'] ?? null,
-                'delivery_lng' => $payload['delivery_lng'] ?? null,
-                'requested_at' => now(),
+                'pickup_lat'       => $payload['pickup_lat'] ?? null,
+                'pickup_lng'       => $payload['pickup_lng'] ?? null,
+                'delivery_lat'     => $payload['delivery_lat'] ?? null,
+                'delivery_lng'     => $payload['delivery_lng'] ?? null,
+                'requested_at'     => now(),
             ]);
             $delivery->save();
 
             // event awal
             DeliveryEvent::create([
                 'delivery_id' => $delivery->id,
-                'status' => 'REQUESTED',
-                'note'   => 'Delivery requested',
+                'status'      => 'REQUESTED',
+                'note'        => 'Delivery requested',
                 'occurred_at' => now(),
             ]);
 
@@ -10952,7 +11417,7 @@ class DeliveryService
             ->orderBy('id', 'asc')
             ->first();
 
-        if (!$candidate) {
+        if (! $candidate) {
             throw ValidationException::withMessages(['assigned_to' => 'Tidak ada kurir tersedia di cabang ini.']);
         }
 
@@ -10972,8 +11437,8 @@ class DeliveryService
                 $delivery->status = 'ASSIGNED';
                 DeliveryEvent::create([
                     'delivery_id' => $delivery->id,
-                    'status' => 'ASSIGNED',
-                    'note'   => "Assigned to user #{$userId}",
+                    'status'      => 'ASSIGNED',
+                    'note'        => "Assigned to user #{$userId}",
                     'occurred_at' => now(),
                 ]);
             }
@@ -10989,7 +11454,7 @@ class DeliveryService
         $allowed = self::TRANSITIONS[$delivery->status] ?? [];
         if (! in_array($nextStatus, $allowed, true)) {
             throw ValidationException::withMessages([
-                'status' => "Transisi status tidak valid: {$delivery->status} → {$nextStatus}"
+                'status' => "Transisi status tidak valid: {$delivery->status} → {$nextStatus}",
             ]);
         }
 
@@ -10999,15 +11464,15 @@ class DeliveryService
                 $path = $photo->store("deliveries/{$delivery->id}/events", 'public');
 
                 /** @var FilesystemAdapter $public */
-                $public = Storage::disk('public');
+                $public   = Storage::disk('public');
                 $photoUrl = $public->url($path);
             }
 
             DeliveryEvent::create([
                 'delivery_id' => $delivery->id,
-                'status' => $nextStatus,
-                'note'   => $note,
-                'photo_url' => $photoUrl,
+                'status'      => $nextStatus,
+                'note'        => $note,
+                'photo_url'   => $photoUrl,
                 'occurred_at' => now(),
             ]);
 
@@ -11022,6 +11487,10 @@ class DeliveryService
             // COD sync ketika delivered
             if ($nextStatus === 'DELIVERED') {
                 $this->maybeSyncCOD($delivery);
+
+                /** @var FeeService $feeService */
+                $feeService = app(FeeService::class);
+                $feeService->generateForDeliveredDelivery($delivery->fresh(['order']));
             }
 
             return $delivery->fresh(['events', 'courier', 'order']);
@@ -11035,15 +11504,15 @@ class DeliveryService
             $path = $photo->store("deliveries/{$delivery->id}/events", 'public');
 
             /** @var FilesystemAdapter $public */
-            $public = Storage::disk('public');
+            $public   = Storage::disk('public');
             $photoUrl = $public->url($path);
         }
 
         return DeliveryEvent::create([
             'delivery_id' => $delivery->id,
-            'status' => $status,
-            'note'   => $note,
-            'photo_url' => $photoUrl,
+            'status'      => $status,
+            'note'        => $note,
+            'photo_url'   => $photoUrl,
             'occurred_at' => now(),
         ]);
     }
@@ -11055,17 +11524,17 @@ class DeliveryService
 
         // contoh logika umum: hanya jika metode COD & belum lunas
         if (($order->payment_method ?? null) === 'COD') {
-            $unpaid = max(0.0, (float)$order->grand_total - (float)$order->paid_total);
+            $unpaid = max(0.0, (float) $order->grand_total - (float) $order->paid_total);
             if ($unpaid > 0) {
                 /** @var CheckoutService $checkout */
                 $checkout = app(CheckoutService::class);
 
                 // Salurkan lewat jalur resmi → akan record payment + recompute + set PAID + kurangi stok + generate fee
                 $checkout->addPayment($order, [
-                    'method'  => 'CASH',
-                    'amount'  => $unpaid,
-                    'status'  => 'SUCCESS',
-                    'paid_at' => now(),
+                    'method'       => 'CASH',
+                    'amount'       => $unpaid,
+                    'status'       => 'SUCCESS',
+                    'paid_at'      => now(),
                     'payload_json' => [
                         // opsional: mapping holder kas bila kamu pakai CashService mirror
                         // 'holder_id' => $someHolderId,
@@ -11079,46 +11548,59 @@ class DeliveryService
     public function buildSuratJalanHtml(Delivery $d): string
     {
         Log::info('SJ_HTML_BUILD_START', ['delivery_id' => $d->id]);
-        // eager minimal bila belum
+
         $d->load([
             'order' => function ($qo) {
-                $qo->select('id', 'kode', 'cabang_id', 'subtotal', 'discount', 'grand_total', 'paid_total', 'status', 'created_at')
+                $qo->select(
+                    'id',
+                    'kode',
+                    'cabang_id',
+                    'customer_id',
+                    'customer_name',
+                    'customer_phone',
+                    'customer_address',
+                    'subtotal',
+                    'discount',
+                    'grand_total',
+                    'paid_total',
+                    'status',
+                    'created_at'
+                )
                     ->with([
                         'items' => fn($qi) => $qi->select(
                             'id',
                             'order_id',
-                            DB::raw('name_snapshot AS name'),
+                            'name_snapshot',
                             'qty',
                             'price',
-                            DB::raw('NULL::text AS note') // kolom note tdk ada
+                            DB::raw('NULL::text AS note')
                         ),
-                        'customer:id,name,phone,address',
-                        // cabang di poin #2 (lihat di bawah)
+                        'customer:id,nama,phone,alamat',
+                        'cabang:id,nama,alamat,telepon',
                     ]);
             },
-            // 'branch' → hapus (lihat poin #2)
             'courier:id,name,phone',
         ]);
 
         Log::info('SJ_HTML_BUILD_DATA', [
-            'delivery_id'   => $d->id,
-            'order_id'      => optional($d->order)->id,
-            'order_kode'    => optional($d->order)->kode,
-            'subtotal'      => optional($d->order)->subtotal,
-            'discount'      => optional($d->order)->discount,
-            'grand_total'   => optional($d->order)->grand_total,
-            'paid_total'    => optional($d->order)->paid_total,
-            'status'        => optional($d->order)->status,
-            'items_count'   => optional($d->order?->items)->count() ?? 0,
+            'delivery_id' => $d->id,
+            'order_id'    => optional($d->order)->id,
+            'order_kode'  => optional($d->order)->kode,
+            'subtotal'    => optional($d->order)->subtotal,
+            'discount'    => optional($d->order)->discount,
+            'grand_total' => optional($d->order)->grand_total,
+            'paid_total'  => optional($d->order)->paid_total,
+            'status'      => optional($d->order)->status,
+            'items_count' => optional($d->order?->items)->count() ?? 0,
         ]);
 
         $order   = $d->order;
-        $branch  = $d->branch;
+        $branch  = $order?->cabang;
         $courier = $d->courier;
 
-        $branchName  = $branch->name  ?? 'Cabang';
-        $branchAddr  = $branch->address ?? '-';
-        $branchPhone = $branch->phone ?? '-';
+        $branchName  = $branch->nama ?? 'Cabang';
+        $branchAddr  = $branch->alamat ?? '-';
+        $branchPhone = $branch->telepon ?? '-';
 
         $sjNumber = $d->sj_number ?: $this->fallbackSJNumber($d);
         $now      = now()->format('Y-m-d H:i');
@@ -11127,43 +11609,53 @@ class DeliveryService
         $orderCode = $order->kode ?? ('ORD#' . $order->id);
         $orderDate = optional($order->created_at)->format('Y-m-d H:i') ?? '-';
 
-        $customerName  = optional($order->customer)->name  ?? '-';
-        $customerPhone = optional($order->customer)->phone ?? '-';
-        $pickupAddr    = $d->pickup_address   ?? (optional($order->customer)->address ?? '-');
-        $deliveryAddr  = $d->delivery_address ?? (optional($order->customer)->address ?? '-');
+        $customerName = $order->customer_name ?? optional($order->customer)->nama ?? '-';
 
-        $grand = (float)($order->grand_total ?? 0);
-        $paid  = (float)($order->paid_total ?? 0);
+        $customerPhone = $order->customer_phone ?? optional($order->customer)->phone ?? '-';
+
+        $customerAddress = $order->customer_address ?? optional($order->customer)->alamat ?? '-';
+
+        $pickupAddr   = $d->pickup_address ?? $customerAddress;
+        $deliveryAddr = $d->delivery_address ?? $customerAddress;
+
+        $grand  = (float) ($order->grand_total ?? 0);
+        $paid   = (float) ($order->paid_total ?? 0);
         $dueAmt = max($grand - $paid, 0);
 
         $paymentStatus = $dueAmt <= 0.00001 ? 'PAID' : ($paid > 0 ? 'PARTIAL' : 'UNPAID');
-        $codInfo = $dueAmt > 0 ? (' (COD: ' . $this->fmtMoney($dueAmt) . ')') : '';
+        $codInfo       = $dueAmt > 0 ? (' (COD: ' . $this->fmtMoney($dueAmt) . ')') : '';
 
-        // Items table
+// Items table
         $rows = '';
         foreach (($order->items ?? []) as $i => $it) {
-            $name  = $this->e($it->name ?? $it->product_name ?? $it->item_name ?? ('Item #' . $it->id));
-            $qty   = (int)($it->qty ?? 1);
+            $rawName = $it->name_snapshot ?? $it->name ?? $it->product_name ?? $it->item_name ?? null;
+
+            $name = $this->e(
+                filled($rawName) ? (string) $rawName : ('Item #' . $it->id)
+            );
+
+            $qty   = (float) ($it->qty ?? 1);
             $note  = $this->e($it->note ?? '');
             $price = isset($it->price) ? $this->fmtMoney($it->price) : '';
-            $sub   = (isset($it->price) ? $this->fmtMoney($it->price * $qty) : '');
+            $sub   = isset($it->price) ? $this->fmtMoney(((float) $it->price) * $qty) : '';
+
             $rows .= "<tr>
-                <td>" . ($i + 1) . "</td>
-                <td>{$name}" . ($note ? "<br/><small>{$note}</small>" : "") . "</td>
-                <td style='text-align:center'>{$qty}</td>
-                <td style='text-align:right'>{$price}</td>
-                <td style='text-align:right'>{$sub}</td>
-            </tr>";
+        <td>" . ($i + 1) . "</td>
+        <td>{$name}" . ($note ? "<br/><small>{$note}</small>" : "") . "</td>
+        <td style='text-align:center'>" . rtrim(rtrim(number_format($qty, 2, ',', '.'), '0'), ',') . "</td>
+        <td style='text-align:right'>{$price}</td>
+        <td style='text-align:right'>{$sub}</td>
+    </tr>";
         }
 
         $totals = '';
         if (isset($order->grand_total)) {
-            $subtotal = isset($order->subtotal)     ? $this->fmtMoney($order->subtotal) : '';
-            $discount = isset($order->discount)     ? $this->fmtMoney($order->discount) : '';
-            $tax      = isset($order->tax)          ? $this->fmtMoney($order->tax) : '';
-            $service  = isset($order->service_fee)  ? $this->fmtMoney($order->service_fee) : '';
+            $subtotal = isset($order->subtotal) ? $this->fmtMoney($order->subtotal) : '';
+            $discount = isset($order->discount) ? $this->fmtMoney($order->discount) : '';
+            $tax      = isset($order->tax) ? $this->fmtMoney($order->tax) : '';
+            $service  = isset($order->service_fee) ? $this->fmtMoney($order->service_fee) : '';
             $grand    = $this->fmtMoney($order->grand_total ?? 0);
-            $paid     = isset($order->paid_total)   ? $this->fmtMoney($order->paid_total) : '';
+            $paid     = isset($order->paid_total) ? $this->fmtMoney($order->paid_total) : '';
             $dueAmt   = max(($order->grand_total ?? 0) - ($order->paid_total ?? 0), 0);
             $due      = $this->fmtMoney($dueAmt);
 
@@ -11177,8 +11669,22 @@ class DeliveryService
     <tr><td colspan='3'></td><td>Sisa/COD</td><td style='text-align:right'>{$due}</td></tr>";
         }
 
-        $qrText = url("/deliveries/{$d->id}/note");
+        $qrText      = url("/deliveries/{$d->id}/note");
         $courierLine = $courier ? $this->e("{$courier->name} (WA: {$courier->phone})") : '-';
+
+        $sjNumberEsc      = $this->e($sjNumber);
+        $branchNameEsc    = $this->e($branchName);
+        $branchAddrEsc    = $this->e($branchAddr);
+        $branchPhoneEsc   = $this->e($branchPhone);
+        $nowEsc           = $this->e($now);
+        $typeEsc          = $this->e($type);
+        $paymentStatusEsc = $this->e($paymentStatus);
+        $codInfoEsc       = $this->e($codInfo);
+        $orderCodeEsc     = $this->e($orderCode);
+        $orderDateEsc     = $this->e($orderDate);
+        $pickupAddrEsc    = $this->e($pickupAddr);
+        $deliveryAddrEsc  = $this->e($deliveryAddr);
+        $qrTextEsc        = $this->e($qrText);
 
         Log::info('SJ_HTML_BUILD_DONE', ['delivery_id' => $d->id]);
         return <<<HTML
@@ -11186,7 +11692,7 @@ class DeliveryService
 <html>
 <head>
 <meta charset="utf-8">
-<title>Surat Jalan {$this->e($sjNumber)}</title>
+<title>Surat Jalan {$sjNumberEsc}</title>
 <style>
   body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; font-size: 12px; color: #111; }
   .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
@@ -11210,14 +11716,14 @@ class DeliveryService
 <div class="wrap">
   <div class="header row">
     <div class="col">
-      <div><strong>{$this->e($branchName)}</strong></div>
-      <div class="muted">{$this->e($branchAddr)}</div>
-      <div class="muted">Tel: {$this->e($branchPhone)}</div>
+        <div><strong>{$branchNameEsc}</strong></div>
+        <div class="muted">{$branchAddrEsc}</div>
+        <div class="muted">Tel: {$branchPhoneEsc}</div>
     </div>
     <div class="col" style="text-align:right;">
       <h1>SURAT JALAN</h1>
-      <div class="meta">No: <b>{$this->e($sjNumber)}</b></div>
-      <div class="meta">Dicetak: {$this->e($now)}</div>
+        <div class="meta">No: <b>{$sjNumberEsc}</b></div>
+        <div class="meta">Dicetak: {$nowEsc}</div>
     </div>
   </div>
 
@@ -11225,16 +11731,16 @@ class DeliveryService
 
   <table>
     <tr>
-      <th style="width: 25%;">Tipe</th><td>{$this->e($type)}</td>
-      <th style="width: 25%;">Status Pembayaran</th><td>{$this->e($paymentStatus)}{$this->e($codInfo)}</td>
+        <th style="width: 25%;">Tipe</th><td>{$typeEsc}</td>
+        <th style="width: 25%;">Status Pembayaran</th><td>{$paymentStatusEsc}{$codInfoEsc}</td>
     </tr>
     <tr>
-      <th>Ref Order</th><td>{$this->e($orderCode)} ({$this->e($orderDate)})</td>
-      <th>Kurir</th><td>{$courierLine}</td>
+        <th>Ref Order</th><td>{$orderCodeEsc} ({$orderDateEsc})</td>
+        <th>Kurir</th><td>{$courierLine}</td>
     </tr>
     <tr>
-      <th>Alamat Pickup</th><td>{$this->e($pickupAddr)}</td>
-      <th>Alamat Delivery</th><td>{$this->e($deliveryAddr)}</td>
+        <th>Alamat Pickup</th><td>{$pickupAddrEsc}</td>
+        <th>Alamat Delivery</th><td>{$deliveryAddrEsc}</td>
     </tr>
   </table>
 
@@ -11258,7 +11764,7 @@ class DeliveryService
     <div class="col">
       <div><b>Checklist</b></div>
       <div class="muted">[ ] Jumlah paket cocok<br/>[ ] Segel/packaging aman<br/>[ ] Catatan khusus diikuti</div>
-      <div class="qr">QR: {$this->e($qrText)}</div>
+        <div class="qr">QR: {$qrTextEsc}</div>
     </div>
     <div class="col">
       <div><b>Tanda Terima</b></div>
@@ -11286,12 +11792,12 @@ HTML;
                         'items' => fn($qi) => $qi->select(
                             'id',
                             'order_id',
-                            DB::raw('name_snapshot AS name'),
+                            'name_snapshot',
                             'qty',
                             'price',
                             DB::raw('NULL::text AS note')
                         ),
-                        'customer:id,name,phone,address',
+                        'customer:id,nama,phone,alamat',
                     ]);
             },
         ]);
@@ -11311,26 +11817,31 @@ HTML;
         $ocode = $order->kode ?? ('ORD#' . $order->id);
         $odate = optional($order->created_at)->format('Y-m-d H:i') ?? '-';
 
-        $cust   = optional($order->customer)->name ?? '-';
-        $cphone = optional($order->customer)->phone ?? '-';
-        $pick   = $d->pickup_address   ?? (optional($order->customer)->address ?? '-');
-        $drop   = $d->delivery_address ?? (optional($order->customer)->address ?? '-');
+        $cust = $order->customer_name ?? optional($order->customer)->nama ?? '-';
 
-        $grand = (float)($order->grand_total ?? 0);
-        $paid  = (float)($order->paid_total ?? 0);
+        $cphone = $order->customer_phone ?? optional($order->customer)->phone ?? '-';
+
+        $customerAddress = $order->customer_address ?? optional($order->customer)->alamat ?? '-';
+
+        $pick = $d->pickup_address ?? $customerAddress;
+        $drop = $d->delivery_address ?? $customerAddress;
+
+        $grand = (float) ($order->grand_total ?? 0);
+        $paid  = (float) ($order->paid_total ?? 0);
         $due   = max($grand - $paid, 0);
         $paySt = $due <= 0.00001 ? 'PAID' : ($paid > 0 ? 'PARTIAL' : 'UNPAID');
         $cod   = $due > 0 ? (' (COD: ' . $this->fmtMoney($due) . ')') : '';
 
         $items = $order->items ?? [];
-        $summ  = $items ? implode(', ', array_map(
-            fn($it) => (($it->name ?? $it->product_name ?? $it->item_name ?? 'Item') . ' x' . (int)($it->qty ?? 1)),
-            $items
-        )) : '-';
+        $summ  = $items ? implode(', ', array_map(function ($it) {
+            $rawName = $it->name_snapshot ?? $it->name ?? $it->product_name ?? $it->item_name ?? 'Item';
+
+            return $rawName . ' x' . rtrim(rtrim(number_format((float) ($it->qty ?? 1), 2, ',', '.'), '0'), ',');
+        }, $items)) : '-';
 
         $noteUrl = url("/deliveries/{$d->id}/note");
         $maps    = $d->maps_url ?? '';
-        $notes   = trim((string)($d->notes ?? ''));
+        $notes   = trim((string) ($d->notes ?? ''));
 
         $text = "Surat Jalan #{$sj}\n"
             . "Tipe: {$type}\n"
@@ -11365,21 +11876,21 @@ HTML;
                             'price',
                             DB::raw('NULL::text AS note')
                         ),
-                        'customer:id,name,phone,address',
+                        'customer:id,nama,phone,alamat',
                     ]);
             },
         ]);
 
         Log::info('SJ_WA_SEND_DATA', [
-            'delivery_id' => $d->id,
-            'courier_id'  => optional($d->courier)->id,
+            'delivery_id'   => $d->id,
+            'courier_id'    => optional($d->courier)->id,
             'courier_phone' => optional($d->courier)->phone,
-            'order_id'    => optional($d->order)->id,
-            'order_kode'  => optional($d->order)->kode,
+            'order_id'      => optional($d->order)->id,
+            'order_kode'    => optional($d->order)->kode,
         ]);
 
         $courier = $d->courier;
-        if (!$courier || !$courier->phone) {
+        if (! $courier || ! $courier->phone) {
             return ['message' => 'Nomor WhatsApp kurir tidak tersedia'];
         }
 
@@ -11404,8 +11915,8 @@ HTML;
         }
 
         // Set nomor SJ saat pertama kali kirim (opsional)
-        if (!$d->sj_number) {
-            $d->sj_number   = $this->generateSJNumber($d);
+        if (! $d->sj_number) {
+            $d->sj_number    = $this->generateSJNumber($d);
             $d->sj_issued_at = now();
             $d->save();
         }
@@ -11417,7 +11928,7 @@ HTML;
 
     protected function sanitizePhone(?string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', (string)$phone);
+        $digits = preg_replace('/\D+/', '', (string) $phone);
         if (\Illuminate\Support\Str::startsWith($digits, '0')) {
             $digits = '62' . substr($digits, 1);
         }
@@ -11429,9 +11940,9 @@ HTML;
         return 'https://wa.me/' . $phone . '?text=' . rawurlencode($text);
     }
 
-    protected function fmtMoney(float|int $n): string
+    protected function fmtMoney(float | int $n): string
     {
-        return 'Rp ' . number_format((float)$n, 0, ',', '.');
+        return 'Rp ' . number_format((float) $n, 0, ',', '.');
     }
 
     protected function e(string $s): string
@@ -11445,7 +11956,7 @@ HTML;
         $nm = $d->order?->cabang?->nama ?? 'CABANG';
         // bikin 2–3 huruf kode dari nama cabang
         $code = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $nm), 0, 3)) ?: 'CBG';
-        return 'SJ-' . $code . '-' . now()->format('Ymd') . '-' . str_pad((string)$d->id, 5, '0', STR_PAD_LEFT);
+        return 'SJ-' . $code . '-' . now()->format('Ymd') . '-' . str_pad((string) $d->id, 5, '0', STR_PAD_LEFT);
     }
 
     protected function generateSJNumber(Delivery $d): string
@@ -11460,40 +11971,39 @@ HTML;
 
 ### app/Services/FeeService.php
 
-- SHA: `0fbad7cf031a`  
-- Ukuran: 15 KB  
+- SHA: `ac018c4bd5fa`  
+- Ukuran: 20 KB  
 - Namespace: `App\Services`
 
 **Class `FeeService`**
 
 Metode Publik:
 - **generateForPaidOrder**(Order $order) : *void* — Generate fee entries when an order turns PAID.
+- **generateForDeliveredDelivery**(Delivery $delivery) : *void* — Generate fee entries when an order turns PAID.
 - **listEntries**(User $actor, array $filters) — Generate fee entries when an order turns PAID.
 - **markPaid**(array $entryIds, string $status, string $paidAmount = '0', ?string $paidAt = null) : *int* — Generate fee entries when an order turns PAID.
 - **exportCsv**(User $actor, array $filters) : *StreamedResponse* — Generate fee entries when an order turns PAID.
 - **paginate**(array $filters, int $perPage = 15) — Generate fee entries when an order turns PAID.
-- **create**(array $dto) : *\App\Models\Fee* — Generate fee entries when an order turns PAID.
-- **update**(\App\Models\Fee $fee, array $dto) : *\App\Models\Fee* — Generate fee entries when an order turns PAID.
-- **delete**(\App\Models\Fee $fee) : *void* — Generate fee entries when an order turns PAID.
+- **create**(array $dto) : *Fee* — Generate fee entries when an order turns PAID.
+- **update**(Fee $fee, array $dto) : *Fee* — Generate fee entries when an order turns PAID.
+- **delete**(Fee $fee) : *void* — Generate fee entries when an order turns PAID.
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
 <?php
-
 namespace App\Services;
 
+use App\Models\Delivery;
 use App\Models\Fee;
 use App\Models\FeeEntry;
-use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\AccountingService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
-use App\Services\AccountingService;
-use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FeeService
 {
@@ -11528,7 +12038,7 @@ class FeeService
         try {
             if (function_exists('setting')) {
                 $v = setting($key);
-                if ($v !== null && $v !== '' && (int)$v > 0) {
+                if ($v !== null && $v !== '' && (int) $v > 0) {
                     return (int) $v;
                 }
             }
@@ -11555,9 +12065,9 @@ class FeeService
             $baseAmount = $grandTotal;
             if ($fee->calc_type === 'PERCENT') {
                 if (\function_exists('bcmul') && \function_exists('bcdiv')) {
-                    $feeAmount = bcdiv(bcmul($baseAmount, (string)$fee->rate, 4), '100', 2);
+                    $feeAmount = bcdiv(bcmul($baseAmount, (string) $fee->rate, 4), '100', 2);
                 } else {
-                    $feeAmount = number_format(((float)$baseAmount * (float)$fee->rate) / 100, 2, '.', '');
+                    $feeAmount = number_format(((float) $baseAmount * (float) $fee->rate) / 100, 2, '.', '');
                 }
             } else {
                 $feeAmount = number_format((float) $fee->rate, 2, '.', '');
@@ -11586,7 +12096,7 @@ class FeeService
                 $entry->base_amount   = $baseAmount;
                 $entry->fee_amount    = $feeAmount;
 
-                if (!$entry->exists) {
+                if (! $entry->exists) {
                     $entry->created_by = Auth::id();
                 }
                 $entry->updated_by = Auth::id();
@@ -11595,21 +12105,81 @@ class FeeService
                 return $entry;
             });
 
-            // === Hook akuntansi: akru fee (Beban Fee (D) vs Hutang Fee (K)) ===
             $this->postAccrualForFee($createdEntry, $order);
         }
+    }
 
-        // TODO: If you want COURIER fees on DELIVERY completion, implement a similar
-        // path in your Delivery complete handler using base='DELIVERY'.
-        // This service already supports DELIVERY ref types.
+    /** Generate courier fee entries when a delivery turns DELIVERED. */
+    public function generateForDeliveredDelivery(Delivery $delivery): void
+    {
+        $delivery->loadMissing('order');
+
+        $order = $delivery->order;
+
+        if (! $order) {
+            return;
+        }
+
+        if (! $delivery->assigned_to) {
+            return;
+        }
+
+        $cabangId  = (int) $order->cabang_id;
+        $eventDate = Carbon::parse($delivery->completed_at ?? $delivery->updated_at ?? now())->toDateString();
+
+        $baseAmount = (string) ($order->service_fee ?? 0);
+
+        $fees = Fee::query()
+            ->where('cabang_id', $cabangId)
+            ->where('is_active', true)
+            ->where('base', 'DELIVERY')
+            ->where('kind', 'COURIER')
+            ->get();
+
+        foreach ($fees as $fee) {
+            if ($fee->calc_type === 'PERCENT') {
+                if (\function_exists('bcmul') && \function_exists('bcdiv')) {
+                    $feeAmount = bcdiv(bcmul($baseAmount, (string) $fee->rate, 4), '100', 2);
+                } else {
+                    $feeAmount = number_format(((float) $baseAmount * (float) $fee->rate) / 100, 2, '.', '');
+                }
+            } else {
+                $feeAmount = number_format((float) $fee->rate, 2, '.', '');
+            }
+
+            $createdEntry = DB::transaction(function () use ($fee, $delivery, $cabangId, $eventDate, $baseAmount, $feeAmount) {
+                $entry = FeeEntry::query()->firstOrNew([
+                    'fee_id'   => $fee->id,
+                    'ref_type' => 'DELIVERY',
+                    'ref_id'   => $delivery->id,
+                ]);
+
+                $entry->cabang_id     = $cabangId;
+                $entry->period_date   = $eventDate;
+                $entry->owner_user_id = $delivery->assigned_to;
+                $entry->base_amount   = $baseAmount;
+                $entry->fee_amount    = $feeAmount;
+
+                if (! $entry->exists) {
+                    $entry->created_by = Auth::id();
+                }
+
+                $entry->updated_by = Auth::id();
+                $entry->save();
+
+                return $entry;
+            });
+
+            $this->postAccrualForFee($createdEntry, $order);
+        }
     }
 
     private function postAccrualForFee(FeeEntry $entry, Order $order): void
     {
-        $feeExpenseId = $this->accId('acc.fee_expense_id');  // Beban Fee
-        $feePayableId = $this->accId('acc.fee_payable_id');  // Hutang Fee
+        $feeExpenseId = $this->accId('acc.fee_expense_id'); // Beban Fee
+        $feePayableId = $this->accId('acc.fee_payable_id'); // Hutang Fee
 
-        if (!$feeExpenseId || !$feePayableId) {
+        if (! $feeExpenseId || ! $feePayableId) {
             return; // setting belum lengkap → jangan mem-post jurnal
         }
 
@@ -11623,8 +12193,8 @@ class FeeService
                 'number'       => 'FEE-ACCR-' . $entry->id, // idempotent by (cabang, number)
                 'description'  => 'Akru Fee order #' . $order->kode,
                 'lines'        => [
-                    ['account_id' => $feeExpenseId, 'debit' => (float)$entry->fee_amount, 'credit' => 0,                    'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
-                    ['account_id' => $feePayableId, 'debit' => 0,                             'credit' => (float)$entry->fee_amount, 'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
+                    ['account_id' => $feeExpenseId, 'debit' => (float) $entry->fee_amount, 'credit' => 0, 'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
+                    ['account_id' => $feePayableId, 'debit' => 0, 'credit' => (float) $entry->fee_amount, 'ref_type' => 'FEE_ENTRY', 'ref_id' => $entry->id],
                 ],
             ]);
         } catch (\Throwable $e) {
@@ -11637,31 +12207,31 @@ class FeeService
     public function listEntries(User $actor, array $filters)
     {
         // Accept both {date_from,date_to} and {from,to}, {status}=pay_status, {mine}
-        $from = $filters['from']      ?? $filters['date_from'] ?? null;
-        $to   = $filters['to']        ?? $filters['date_to']   ?? null;
-        $stat = $filters['pay_status'] ?? $filters['status']    ?? null; // UNPAID|PAID|PARTIAL
-        $mine = isset($filters['mine']) ? (int)$filters['mine'] === 1 : false;
-        $role = $filters['role']      ?? null; // SALES|CASHIER|COURIER (from fees.kind)
-        $sort = $filters['sort']      ?? '-period_date'; // period_date | -period_date | amount | -amount | status | -status
+        $from = $filters['from'] ?? $filters['date_from'] ?? null;
+        $to   = $filters['to'] ?? $filters['date_to'] ?? null;
+        $stat = $filters['pay_status'] ?? $filters['status'] ?? null; // UNPAID|PAID|PARTIAL
+        $mine = isset($filters['mine']) ? (int) $filters['mine'] === 1 : false;
+        $role = $filters['role'] ?? null;           // SALES|CASHIER|COURIER (from fees.kind)
+        $sort = $filters['sort'] ?? '-period_date'; // period_date | -period_date | amount | -amount | status | -status
 
         $q = FeeEntry::query()
             ->with(['fee'])
             ->when(isset($filters['cabang_id']), fn($x) => $x->where('cabang_id', $filters['cabang_id']))
             ->when($from !== null, fn($x) => $x->whereDate('period_date', '>=', $from))
-            ->when($to !== null,   fn($x) => $x->whereDate('period_date', '<=', $to))
+            ->when($to !== null, fn($x) => $x->whereDate('period_date', '<=', $to))
             ->when($stat !== null, fn($x) => $x->where('pay_status', $stat))
             ->when($role !== null, fn($x) => $x->whereHas('fee', fn($w) => $w->where('kind', $role)));
 
         // Role-visibility: sales/cashier/courier see only their own
         $isAdmin = $this->isSuper($actor) || $this->isAdmin($actor);
         $isStaff = $this->isSales($actor) || $this->isKasir($actor) || $this->isKurir($actor);
-        if ($isStaff && !$isAdmin) {
+        if ($isStaff && ! $isAdmin) {
             $q->where('owner_user_id', $actor->id);
         } else {
             // Admins: if ?mine=1 is passed, show only their entries; else default to branch scope when cabang_id missing
             if ($mine) {
                 $q->where('owner_user_id', $actor->id);
-            } elseif (!isset($filters['cabang_id']) && ($actor->cabang_id ?? null)) {
+            } elseif (! isset($filters['cabang_id']) && ($actor->cabang_id ?? null)) {
                 $q->where('cabang_id', $actor->cabang_id);
             }
         }
@@ -11719,13 +12289,13 @@ class FeeService
         });
     }
 
-    private function postPaymentForFee(FeeEntry $entry, \Illuminate\Support\Carbon $paidAt): void
+    private function postPaymentForFee(FeeEntry $entry, Carbon $paidAt): void
     {
         $feePayableId = $this->accId('acc.fee_payable_id'); // Hutang Fee
-        // Default pakai Kas; jika ingin bedakan Bank, tambahkan logika sesuai metode
-        $cashId       = $this->accId('acc.cash_id');
+                                                            // Default pakai Kas; jika ingin bedakan Bank, tambahkan logika sesuai metode
+        $cashId = $this->accId('acc.cash_id');
 
-        if (!$feePayableId || !$cashId) {
+        if (! $feePayableId || ! $cashId) {
             return; // setting belum lengkap
         }
 
@@ -11744,8 +12314,8 @@ class FeeService
                 'number'       => 'FEE-PAY-' . $entry->id, // idempotent by (cabang, number)
                 'description'  => 'Pembayaran Fee #' . $entry->id,
                 'lines'        => [
-                    ['account_id' => $feePayableId, 'debit' => $amount, 'credit' => 0,       'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
-                    ['account_id' => $cashId,       'debit' => 0,       'credit' => $amount, 'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
+                    ['account_id' => $feePayableId, 'debit' => $amount, 'credit' => 0, 'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
+                    ['account_id' => $cashId, 'debit' => 0, 'credit' => $amount, 'ref_type' => 'FEE_PAY', 'ref_id' => $entry->id],
                 ],
             ]);
         } catch (\Throwable $e) {
@@ -11779,7 +12349,7 @@ class FeeService
                     $r->fee_amount,
                     $r->pay_status,
                     $r->paid_amount,
-                    optional($r->paid_at)->toDateTimeString()
+                    optional($r->paid_at)->toDateTimeString(),
                 ]);
             }
             fclose($out);
@@ -11792,7 +12362,7 @@ class FeeService
      * - Tries a global function 'audit', then a container binding 'audit.logger'.
      * - Falls back to a warning log if nothing is available.
      */
-    private function auditSafe(string $action, string $table, int|string $id, array $payload = []): void
+    private function auditSafe(string $action, string $table, int | string $id, array $payload = []): void
     {
         try {
             // Prefer a global helper function named "audit"
@@ -11819,19 +12389,19 @@ class FeeService
     {
         $q = Fee::query();
 
-        if (!empty($filters['cabang_id'])) {
+        if (! empty($filters['cabang_id'])) {
             $q->where('cabang_id', $filters['cabang_id']);
         }
-        if (!empty($filters['kind'])) {
+        if (! empty($filters['kind'])) {
             $q->where('kind', $filters['kind']);
         }
         if (array_key_exists('is_active', $filters) && $filters['is_active'] !== null) {
-            $q->where('is_active', (bool)$filters['is_active']);
+            $q->where('is_active', (bool) $filters['is_active']);
         }
-        if (!empty($filters['base'])) {
+        if (! empty($filters['base'])) {
             $q->where('base', $filters['base']);
         }
-        if (!empty($filters['q'])) {
+        if (! empty($filters['q'])) {
             $q->where('name', 'like', '%' . $filters['q'] . '%');
         }
 
@@ -11843,25 +12413,120 @@ class FeeService
         return $q->paginate($perPage)->appends($filters);
     }
 
-    public function create(array $dto): \App\Models\Fee
+    public function create(array $dto): Fee
     {
         return DB::transaction(function () use ($dto) {
             $dto['created_by'] = Auth::id();
             $dto['updated_by'] = Auth::id();
-            return \App\Models\Fee::create($dto);
-        });
-    }
 
-    public function update(\App\Models\Fee $fee, array $dto): \App\Models\Fee
-    {
-        return DB::transaction(function () use ($fee, $dto) {
-            $dto['updated_by'] = Auth::id();
-            $fee->fill($dto)->save();
+            $fee = Fee::create($dto);
+
+            $this->backfillPaidOrdersForFee($fee);
+
             return $fee;
         });
     }
 
-    public function delete(\App\Models\Fee $fee): void
+    private function backfillPaidOrdersForFee(Fee $fee): void
+    {
+        if (! $fee->is_active) {
+            return;
+        }
+
+        if ($fee->base !== 'GRAND_TOTAL') {
+            return;
+        }
+
+        if (! in_array($fee->kind, ['CASHIER', 'SALES'], true)) {
+            return;
+        }
+
+        Order::query()
+            ->where('cabang_id', $fee->cabang_id)
+            ->where(function ($q) {
+                $q->where('status', 'PAID')
+                    ->orWhereNotNull('paid_at')
+                    ->orWhereColumn('paid_total', '>=', 'grand_total');
+            })
+            ->where('grand_total', '>', 0)
+            ->orderBy('id')
+            ->chunkById(100, function ($orders) use ($fee) {
+                foreach ($orders as $order) {
+                    $exists = FeeEntry::query()
+                        ->where('fee_id', $fee->id)
+                        ->where('ref_type', 'ORDER')
+                        ->where('ref_id', $order->id)
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
+                    }
+
+                    $baseAmount = (string) $order->grand_total;
+
+                    if ($fee->calc_type === 'PERCENT') {
+                        if (\function_exists('bcmul') && \function_exists('bcdiv')) {
+                            $feeAmount = bcdiv(
+                                bcmul($baseAmount, (string) $fee->rate, 4),
+                                '100',
+                                2
+                            );
+                        } else {
+                            $feeAmount = number_format(
+                                ((float) $baseAmount * (float) $fee->rate) / 100,
+                                2,
+                                '.',
+                                ''
+                            );
+                        }
+                    } else {
+                        $feeAmount = number_format((float) $fee->rate, 2, '.', '');
+                    }
+
+                    $ownerUserId = null;
+
+                    if ($fee->kind === 'CASHIER') {
+                        $ownerUserId = $order->cashier_id ?? $order->created_by ?? null;
+                    }
+
+                    if ($fee->kind === 'SALES') {
+                        $ownerUserId = $order->sales_id ?? null;
+                    }
+
+                    FeeEntry::query()->create([
+                        'fee_id'        => $fee->id,
+                        'cabang_id'     => $fee->cabang_id,
+                        'period_date'   => Carbon::parse($order->paid_at ?? $order->updated_at)->toDateString(),
+                        'ref_type'      => 'ORDER',
+                        'ref_id'        => $order->id,
+                        'owner_user_id' => $ownerUserId,
+                        'base_amount'   => $baseAmount,
+                        'fee_amount'    => $feeAmount,
+                        'pay_status'    => 'UNPAID',
+                        'paid_amount'   => '0',
+                        'paid_at'       => null,
+                        'notes'         => 'Generated from existing paid order.',
+                        'created_by'    => Auth::id(),
+                        'updated_by'    => Auth::id(),
+                    ]);
+                }
+            });
+    }
+
+    public function update(Fee $fee, array $dto): Fee
+    {
+        return DB::transaction(function () use ($fee, $dto) {
+            $dto['updated_by'] = Auth::id();
+
+            $fee->fill($dto)->save();
+
+            $this->backfillPaidOrdersForFee($fee->refresh());
+
+            return $fee->refresh();
+        });
+    }
+
+    public function delete(Fee $fee): void
     {
         DB::transaction(function () use ($fee) {
             $fee->delete();
@@ -11995,8 +12660,8 @@ class GudangService
 
 ### app/Services/OrderService.php
 
-- SHA: `bf4f6604759d`  
-- Ukuran: 13 KB  
+- SHA: `f0e63ec7d2d8`  
+- Ukuran: 14 KB  
 - Namespace: `App\Services`
 
 **Class `OrderService`**
@@ -12011,17 +12676,16 @@ Metode Publik:
 ```php
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace App\Services;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Carbon\Carbon;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrderService
 {
@@ -12030,23 +12694,50 @@ class OrderService
      */
     public function list(array $filter, ?int $userCabangId = null): LengthAwarePaginator
     {
+        $keyword = $filter['q'] ?? $filter['search'] ?? null;
+
+        $sort       = $filter['sort'] ?? '-ordered_at';
+        $direction  = str_starts_with((string) $sort, '-') ? 'desc' : 'asc';
+        $sortColumn = ltrim((string) $sort, '-');
+
+        if (! in_array($sortColumn, ['ordered_at', 'kode', 'grand_total'], true)) {
+            $sortColumn = 'ordered_at';
+            $direction  = 'desc';
+        }
+
         $q = Order::query()
             ->with(['items', 'payments'])
             ->when($userCabangId, fn($qq) => $qq->where('cabang_id', $userCabangId))
             ->when($filter['cabang_id'] ?? null, fn($qq, $v) => $qq->where('cabang_id', $v))
             ->when($filter['status'] ?? null, fn($qq, $v) => $qq->where('status', $v))
+            ->when($filter['cash_position'] ?? null, fn($qq, $v) => $qq->where('cash_position', $v))
             ->when($filter['date_from'] ?? null, fn($qq, $v) => $qq->whereDate('ordered_at', '>=', $v))
             ->when($filter['date_to'] ?? null, fn($qq, $v) => $qq->whereDate('ordered_at', '<=', $v))
-            ->when($filter['search'] ?? null, function ($qq, $v) {
-                $like = "%{$v}%";
+            ->when($keyword, function ($qq, $v) {
+                $term = trim((string) $v);
+                $like = '%' . str_replace(' ', '%', $term) . '%';
+
                 $qq->where(function ($w) use ($like) {
-                    $w->where('kode', 'like', $like)
-                        ->orWhere('note', 'like', $like);
+                    $w->where('kode', 'ILIKE', $like)
+                        ->orWhere('note', 'ILIKE', $like)
+                        ->orWhere('customer_name', 'ILIKE', $like)
+                        ->orWhere('customer_phone', 'ILIKE', $like)
+                        ->orWhereHas('items', function ($item) use ($like) {
+                            $item->where('name_snapshot', 'ILIKE', $like)
+                                ->orWhereHas('variant', function ($variant) use ($like) {
+                                    $variant->where('sku', 'ILIKE', $like)
+                                        ->orWhereHas('product', function ($product) use ($like) {
+                                            $product->where('nama', 'ILIKE', $like)
+                                                ->orWhere('slug', 'ILIKE', $like);
+                                        });
+                                });
+                        });
                 });
             })
-            ->orderByDesc('ordered_at');
+            ->orderBy($sortColumn, $direction);
 
-        $perPage = (int)($filter['per_page'] ?? 10);
+        $perPage = (int) ($filter['per_page'] ?? 10);
+
         return $q->paginate($perPage);
     }
 
@@ -12067,12 +12758,12 @@ class OrderService
             // Upsert items
             foreach ($payload['items'] as $row) {
                 // normalize numeric fields
-                $price    = (float)($row['price'] ?? 0);
-                $discount = (float)($row['discount'] ?? 0);
-                $qty      = (float)($row['qty'] ?? 0);
+                $price    = (float) ($row['price'] ?? 0);
+                $discount = (float) ($row['discount'] ?? 0);
+                $qty      = (float) ($row['qty'] ?? 0);
                 $line     = ($price - $discount) * $qty;
 
-                if (!empty($row['id'])) {
+                if (! empty($row['id'])) {
                     // UPDATE existing row: do NOT null-out variant_id/name unless explicitly sent
                     /** @var \App\Models\OrderItem|null $existing */
                     $existing = OrderItem::where('order_id', $order->id)
@@ -12088,12 +12779,12 @@ class OrderService
 
                     // only set variant_id if present in payload
                     if (array_key_exists('variant_id', $row) && $row['variant_id'] !== null) {
-                        $update['variant_id'] = (int)$row['variant_id'];
+                        $update['variant_id'] = (int) $row['variant_id'];
                     }
 
                     // only set name_snapshot if provided (avoid writing empty string if your column is NOT NULL)
-                    if (isset($row['name']) && trim((string)$row['name']) !== '') {
-                        $update['name_snapshot'] = (string)$row['name'];
+                    if (isset($row['name']) && trim((string) $row['name']) !== '') {
+                        $update['name_snapshot'] = (string) $row['name'];
                     }
 
                     $existing->update($update);
@@ -12106,8 +12797,8 @@ class OrderService
 
                     OrderItem::create([
                         'order_id'      => $order->id,
-                        'variant_id'    => (int)$row['variant_id'],
-                        'name_snapshot' => (string)($row['name'] ?? ''), // ensure non-null; prefer real name if available
+                        'variant_id'    => (int) $row['variant_id'],
+                        'name_snapshot' => (string) ($row['name'] ?? ''), // ensure non-null; prefer real name if available
                         'price'         => $price,
                         'discount'      => $discount,
                         'qty'           => $qty,
@@ -12120,9 +12811,9 @@ class OrderService
             $sum = OrderItem::where('order_id', $order->id)
                 ->selectRaw('SUM(line_total) as subtotal')
                 ->first();
-            $order->subtotal = (float)($sum->subtotal ?? 0);
+            $order->subtotal = (float) ($sum->subtotal ?? 0);
             // discount/tax/service_fee dipertahankan (jika ada logic lain, atur di sini)
-            $order->grand_total = $order->subtotal - (float)$order->discount + (float)$order->tax + (float)$order->service_fee;
+            $order->grand_total = $order->subtotal - (float) $order->discount + (float) $order->tax + (float) $order->service_fee;
             $order->save();
 
             $after = $this->snapshot($order);
@@ -12153,8 +12844,8 @@ class OrderService
         ], $actorId);
 
         return [
-            'format' => $format,
-            'html'   => $html,
+            'format'  => $format,
+            'html'    => $html,
             'wa_link' => $this->makeWaLink($order),
         ];
     }
@@ -12165,11 +12856,11 @@ class OrderService
     public function resendWA(Order $order, string $phone, ?string $message, int $actorId): array
     {
         $defaultMsg = $this->defaultWaMessage($order);
-        $text = trim($message ?: $defaultMsg);
-        $wa = 'https://wa.me/' . ltrim($phone, '+0') . '?text=' . urlencode($text);
+        $text       = trim($message ?: $defaultMsg);
+        $wa         = 'https://wa.me/' . ltrim($phone, '+0') . '?text=' . urlencode($text);
 
         $this->audit('ORDER_WA_RESEND', $order, [
-            'phone' => $phone,
+            'phone'   => $phone,
             'message' => $text,
         ], $actorId);
 
@@ -12190,7 +12881,7 @@ class OrderService
                 'tax',
                 'service_fee',
                 'grand_total',
-                'paid_total'
+                'paid_total',
             ]),
             'items' => $o->items->map(fn($i) => Arr::only($i->toArray(), [
                 'id',
@@ -12199,7 +12890,7 @@ class OrderService
                 'price',
                 'discount',
                 'qty',
-                'line_total'
+                'line_total',
             ]))->all(),
         ];
     }
@@ -12207,8 +12898,8 @@ class OrderService
     protected function defaultWaMessage(Order $o): string
     {
         return "Terima kasih telah berbelanja.\n" .
-            "Kode: {$o->kode}\nTotal: Rp " . $this->nf($o->grand_total, 0) .
-            "\nTanggal: " . $o->ordered_at;
+        "Kode: {$o->kode}\nTotal: Rp " . $this->nf($o->grand_total, 0) .
+        "\nTanggal: " . $o->ordered_at;
     }
 
     protected function makeWaLink(Order $o): string
@@ -12219,14 +12910,14 @@ class OrderService
 
     private function nf($value, int $decimals = 0): string
     {
-        $n = is_numeric($value) ? (float)$value : 0.0;
+        $n = is_numeric($value) ? (float) $value : 0.0;
         return number_format($n, $decimals, ',', '.');
     }
 
     private function nfDot($value, int $decimals = 2): string
     {
         // untuk format dengan titik desimal (mis. Qty 2 desimal), lalu trim trailing .0
-        $n = is_numeric($value) ? (float)$value : 0.0;
+        $n = is_numeric($value) ? (float) $value : 0.0;
         return rtrim(rtrim(number_format($n, $decimals, '.', ''), '0'), '.');
     }
 
@@ -12234,7 +12925,7 @@ class OrderService
     {
         // Tabel audit_logs ada di ERD dan Flow (disarankan).
         // Jika model AuditLog sudah ada, panggil di sini. Jika belum, bisa simpan via DB::table(...).
-        if (!Schema::hasTable('audit_logs')) {
+        if (! Schema::hasTable('audit_logs')) {
             return;
         }
 
@@ -12256,17 +12947,17 @@ class OrderService
         $widthPx = $format === '80' ? 576 : 384;
 
         $kode   = e($order->kode);
-        $date   = e(optional($order->ordered_at)->format('Y-m-d H:i') ?? (string)$order->ordered_at);
-        $cabang = e((string)($order->cabang->nama ?? $order->cabang_id));
-        $status = e((string)$order->status);
+        $date   = e(optional($order->ordered_at)->format('Y-m-d H:i') ?? (string) $order->ordered_at);
+        $cabang = e((string) ($order->cabang->nama ?? $order->cabang_id));
+        $status = e((string) $order->status);
 
         $rows = '';
         foreach ($order->items as $it) {
             $name  = e($it->name_snapshot ?: '');
-            $qty   = (float)$it->qty;            // ensure float
-            $price = (float)$it->price;          // ensure float
-            $disc  = (float)$it->discount;       // ensure float
-            $line  = (float)$it->line_total;     // ensure float
+            $qty   = (float) $it->qty;        // ensure float
+            $price = (float) $it->price;      // ensure float
+            $disc  = (float) $it->discount;   // ensure float
+            $line  = (float) $it->line_total; // ensure float
 
             $rows .= '
             <tr>
@@ -12283,7 +12974,7 @@ class OrderService
         $serviceFee = $this->nf($order->service_fee, 0);
         $grandTotal = $this->nf($order->grand_total, 0);
         $paidTotal  = $this->nf($order->paid_total, 0);
-        $change     = $this->nf(max(0, (float)$order->paid_total - (float)$order->grand_total), 0);
+        $change     = $this->nf(max(0, (float) $order->paid_total - (float) $order->grand_total), 0);
 
         return <<<HTML
 <!doctype html>
@@ -12528,14 +13219,14 @@ class ProductMediaService
 
 ### app/Services/Products/ProductService.php
 
-- SHA: `016f1c5f700e`  
-- Ukuran: 5 KB  
+- SHA: `84ca6834daa2`  
+- Ukuran: 6 KB  
 - Namespace: `App\Services\Products`
 
 **Class `ProductService`**
 
 Metode Publik:
-- **list**(?string $search = null, int $perPage = 24, ?bool $onlyActive = true)
+- **list**(?string $search = null, int $perPage = 24, ?bool $onlyActive = true, ?int $gudangId = null)
 - **create**(array $data) : *Product*
 - **update**(Product $product, array $data) : *Product* — @var Product $product
 - **delete**(Product $product) : *void* — @var Product $product
@@ -12546,19 +13237,21 @@ Metode Publik:
 
 ```php
 <?php
-
 namespace App\Services\Products;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Collection;
 
 class ProductService
 {
-    public function list(?string $search = null, int $perPage = 24, ?bool $onlyActive = true)
-    {
+    public function list(
+        ?string $search = null,
+        int $perPage = 24,
+        ?bool $onlyActive = true,
+        ?int $gudangId = null
+    ) {
         return Product::query()
             ->when($onlyActive, fn($q) => $q->active())
             ->withCount('variants')
@@ -12566,7 +13259,36 @@ class ProductService
                 ['variants as min_variant_harga' => fn($q) => $q->where('is_active', true)],
                 'harga'
             )
-            ->with(['primaryMedia:id,product_id,path,is_primary,sort_order'])
+            ->with([
+                'primaryMedia:id,product_id,path,is_primary,sort_order',
+                'variants' => function ($q) use ($gudangId) {
+                    $q->select(
+                        'id',
+                        'product_id',
+                        'size',
+                        'type',
+                        'tester',
+                        'sku',
+                        'harga',
+                        'is_active',
+                        'created_at',
+                        'updated_at'
+                    )
+                        ->where('is_active', true)
+                        ->orderBy('id');
+
+                    if ($gudangId) {
+                        $q->withSum([
+                            'stocks as stock_qty' => fn($stock) => $stock->where('gudang_id', $gudangId),
+                        ], 'qty');
+                    }
+                },
+            ])
+            ->when($gudangId, function ($q) use ($gudangId) {
+                $q->whereHas('variants.stocks', function ($stock) use ($gudangId) {
+                    $stock->where('gudang_id', $gudangId);
+                });
+            })
             ->search($search)
             ->orderByDesc('id')
             ->paginate($perPage);
@@ -12588,7 +13310,7 @@ class ProductService
             ]);
 
             // optional initial variants
-            if (!empty($data['variants']) && is_array($data['variants'])) {
+            if (! empty($data['variants']) && is_array($data['variants'])) {
                 foreach ($data['variants'] as $v) {
                     $this->createVariant($product, $v);
                 }
@@ -12601,7 +13323,7 @@ class ProductService
     public function update(Product $product, array $data): Product
     {
         return DB::transaction(function () use ($product, $data) {
-            if (isset($data['nama']) && !isset($data['slug'])) {
+            if (isset($data['nama']) && ! isset($data['slug'])) {
                 // regenerate slug only if not explicitly provided
                 $data['slug'] = $this->ensureUniqueSlug(Str::slug($data['nama']), $product->id);
             } elseif (isset($data['slug'])) {
@@ -12627,12 +13349,12 @@ class ProductService
         $sku = $data['sku'] ?? $this->generateSku($product, $data);
         return ProductVariant::create([
             'product_id' => $product->id,
-            'size'   => $data['size']   ?? null,
-            'type'   => $data['type']   ?? null,
-            'tester' => $data['tester'] ?? null,
-            'harga'  => $data['harga'],
-            'sku'    => $this->ensureUniqueSku($sku),
-            'is_active' => $data['is_active'] ?? true,
+            'size'       => $data['size'] ?? null,
+            'type'       => $data['type'] ?? null,
+            'tester'     => $data['tester'] ?? null,
+            'harga'      => $data['harga'],
+            'sku'        => $this->ensureUniqueSku($sku),
+            'is_active'  => $data['is_active'] ?? true,
         ]);
     }
 
@@ -12658,7 +13380,7 @@ class ProductService
     {
         $slug = Str::slug($base) ?: Str::random(6);
         $try  = $slug;
-        $i = 1;
+        $i    = 1;
         while (Product::where('slug', $try)->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))->exists()) {
             $try = $slug . '-' . $i++;
         }
@@ -12667,11 +13389,11 @@ class ProductService
 
     private function generateSku(Product $product, array $data): string
     {
-        $code = strtoupper(Str::slug(substr($product->nama, 0, 12), ''));
+        $code  = strtoupper(Str::slug(substr($product->nama, 0, 12), ''));
         $parts = [
-            strtoupper(substr((string)($data['size'] ?? ''), 0, 3)),
-            strtoupper(substr((string)($data['type'] ?? ''), 0, 3)),
-            strtoupper(substr((string)($data['tester'] ?? ''), 0, 3)),
+            strtoupper(substr((string) ($data['size'] ?? ''), 0, 3)),
+            strtoupper(substr((string) ($data['type'] ?? ''), 0, 3)),
+            strtoupper(substr((string) ($data['tester'] ?? ''), 0, 3)),
         ];
         $base = $code . '-' . implode('', array_filter($parts));
         return $base ?: 'SKU-' . Str::upper(Str::random(6));
@@ -12679,9 +13401,9 @@ class ProductService
 
     private function ensureUniqueSku(string $base, ?int $ignoreId = null): string
     {
-        $sku = preg_replace('/\s+/', '', strtoupper($base)) ?: 'SKU-' . Str::upper(Str::random(6));
-        $try = $sku;
-        $i = 1;
+        $sku   = preg_replace('/\s+/', '', strtoupper($base)) ?: 'SKU-' . Str::upper(Str::random(6));
+        $try   = $sku;
+        $i     = 1;
         $query = fn($t) => ProductVariant::where('sku', $t)
             ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId));
         while ($query($try)->exists()) {
@@ -13018,14 +13740,14 @@ class SettingService
 
 ### app/Services/StockPlanningService.php
 
-- SHA: `47984b6fa455`  
+- SHA: `d3a8ef8d43e8`  
 - Ukuran: 1 KB  
 - Namespace: `App\Services`
 
 **Class `StockPlanningService`**
 
 Metode Publik:
-- **estimateReorderPoint**(int $gudangId, int $variantId, int $lookbackDays = 30) : *?int* — Estimasi ROP sederhana:
+- **estimateReorderPoint**(int $gudangId, int $variantId, int $lookbackDays = 30) : *?int* — Estimasi ROP:
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
@@ -13039,7 +13761,7 @@ use Carbon\Carbon;
 class StockPlanningService
 {
     /**
-     * Estimasi ROP sederhana:
+     * Estimasi ROP:
      * ROP = ceil(AvgDailyDemand * lead_time_days) + (safety_stock ?: 0)
      * AvgDailyDemand dari histori 30 hari terakhir pada gudang+variant.
      */
@@ -13177,8 +13899,8 @@ class UserService
 
 ### app/Services/VariantStockService.php
 
-- SHA: `63adbe40b5a9`  
-- Ukuran: 11 KB  
+- SHA: `2f7f16db0ef7`  
+- Ukuran: 10 KB  
 - Namespace: `App\Services`
 
 **Class `VariantStockService`**
@@ -13186,27 +13908,26 @@ class UserService
 Metode Publik:
 - **setInitialStock**(int $gudangId, int $variantId, int $qty, ?int $minStok = null) : *VariantStock* — Set stok awal (upsert unik per gudang+variant).
 - **adjust**(VariantStock $stock, string $type, int $amount, ?string $note = null) : *VariantStock* — Set stok awal (upsert unik per gudang+variant).
+- **updateStockConfig**(VariantStock $stock, array $payload) : *VariantStock* — Set stok awal (upsert unik per gudang+variant).
 - **updateMinStok**(VariantStock $stock, int $minStok) : *VariantStock* — Set stok awal (upsert unik per gudang+variant).
 - **ensureUniquenessAndSync**(VariantStock $stock) : *void* — Set stok awal (upsert unik per gudang+variant).
-- **receiveLot**(int $gudangId, int $variantId, int $qty, ?string $lotNo = null, string|\DateTimeInterface|null $receivedAt = null, // 'Y-m-d' atau timestamp string|\DateTimeInterface|null $expiresAt = null, // 'Y-m-d' (opsional) — Set stok awal (upsert unik per gudang+variant).
-- **allocateFifoAndDeduct**(int $gudangId, int $variantId, int $orderItemId, int $qty, ?string $note = null, ?string $refType = 'SALE', ?string $refId = null, ?int $cabangId = null, // opsional; jika null akan diambil dari gudang) : *void* — Set stok awal (upsert unik per gudang+variant).
+- **receiveLot**(int $gudangId, int $variantId, int $qty, ?string $lotNo = null, string | \DateTimeInterface | null $receivedAt = null, string | \DateTimeInterface | null $expiresAt = null, ?float $unitCost = null, ?string $note = null, ?string $refType = null, ?string $refId = null) : *StockLot* — Set stok awal (upsert unik per gudang+variant).
+- **allocateFifoAndDeduct**(int $gudangId, int $variantId, int $orderItemId, int $qty, ?string $note = null, ?string $refType = 'SALE', ?string $refId = null, ?int $cabangId = null,) : *void* — Set stok awal (upsert unik per gudang+variant).
 <details><summary><strong>Lihat Kode Lengkap</strong></summary>
 
 ```php
 <?php
-
 namespace App\Services;
 
-use App\Models\VariantStock;
 use App\Models\Gudang;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\OrderItemLotAllocation;
 use App\Models\StockLot;
 use App\Models\StockMovement;
-use App\Models\OrderItemLotAllocation;
-use RuntimeException;
+use App\Models\VariantStock;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class VariantStockService
 {
@@ -13224,13 +13945,16 @@ class VariantStockService
             $gudang = Gudang::query()->with('cabang')->findOrFail($gudangId);
             /** @var VariantStock $stock */
             $stock = VariantStock::query()->firstOrNew([
-                'gudang_id' => $gudang->id,
+                'gudang_id'          => $gudang->id,
                 'product_variant_id' => $variantId,
             ]);
 
             $stock->cabang_id = $gudang->cabang_id;
-            $stock->qty       = (int)$qty;
-            if ($minStok !== null) $stock->min_stok = (int)$minStok;
+            $stock->qty       = (int) $qty;
+            if ($minStok !== null) {
+                $stock->min_stok = (int) $minStok;
+            }
+
             $stock->save();
 
             // (Optional) dispatch event: VariantStockInitialized
@@ -13249,37 +13973,50 @@ class VariantStockService
     public function adjust(VariantStock $stock, string $type, int $amount, ?string $note = null): VariantStock
     {
         return DB::transaction(function () use ($stock, $type, $amount, $note) {
-            $stock->lockForUpdate(); // hindari race condition
+            $stock->lockForUpdate();
             if ($type === 'increase') {
                 $stock->qty += $amount;
             } else {
-                // cegah negatif
                 if ($stock->qty < $amount) {
-                    throw new \RuntimeException('Stok tidak mencukupi untuk dikurangi.');
+                    throw new RuntimeException('Stok tidak mencukupi untuk dikurangi.');
                 }
                 $stock->qty -= $amount;
             }
             $stock->save();
 
-            // (Optional) audit log penyesuaian menggunakan $note
             return $stock->refresh();
         });
     }
 
-    /**
-     * Update threshold low-stock.
-     */
-    public function updateMinStok(VariantStock $stock, int $minStok): VariantStock
+    public function updateStockConfig(VariantStock $stock, array $payload): VariantStock
     {
-        $stock->min_stok = $minStok;
-        $stock->save();
-        return $stock->refresh();
+        return DB::transaction(function () use ($stock, $payload) {
+            $stock = VariantStock::query()
+                ->whereKey($stock->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            foreach (['min_stok', 'safety_stock', 'lead_time_days', 'reorder_point'] as $field) {
+                if (array_key_exists($field, $payload)) {
+                    $stock->{$field} = $payload[$field] !== null
+                        ? (int) $payload[$field]
+                        : null;
+                }
+            }
+
+            $stock->save();
+
+            return $stock->refresh()->load(['gudang', 'variant', 'cabang']);
+        });
     }
 
-    /**
-     * Konsistensi: pastikan 1 baris per (gudang, variant) dan cabang sinkron.
-     * Bisa dipanggil sebagai maintenance/command bila perlu.
-     */
+    public function updateMinStok(VariantStock $stock, int $minStok): VariantStock
+    {
+        return $this->updateStockConfig($stock, [
+            'min_stok' => $minStok,
+        ]);
+    }
+
     public function ensureUniquenessAndSync(VariantStock $stock): void
     {
         $duplicate = VariantStock::query()
@@ -13289,20 +14026,17 @@ class VariantStockService
             ->exists();
 
         if ($duplicate) {
-            throw new \RuntimeException('Data stok duplikat untuk gudang & varian yang sama.');
+            throw new RuntimeException('Data stok duplikat untuk gudang & varian yang sama.');
         }
     }
 
-    /**
-     * Penerimaan stok ke lot baru (IN) + update agregat + ledger.
-     */
     public function receiveLot(
         int $gudangId,
         int $variantId,
         int $qty,
         ?string $lotNo = null,
-        string|\DateTimeInterface|null $receivedAt = null, // 'Y-m-d' atau timestamp
-        string|\DateTimeInterface|null $expiresAt = null,  // 'Y-m-d' (opsional)
+        string | \DateTimeInterface  | null $receivedAt = null,
+        string | \DateTimeInterface  | null $expiresAt = null,
         ?float $unitCost = null,
         ?string $note = null,
         ?string $refType = null,
@@ -13324,10 +14058,8 @@ class VariantStockService
                 throw new RuntimeException('Qty penerimaan harus > 0');
             }
 
-            // 1) Ambil gudang & cabang
             $gudang = Gudang::query()->with('cabang')->findOrFail($gudangId);
 
-            // 2) Lock baris stok agregat per (gudang, variant)
             /** @var VariantStock|null $stock */
             $stock = VariantStock::query()
                 ->where('gudang_id', $gudang->id)
@@ -13335,7 +14067,7 @@ class VariantStockService
                 ->lockForUpdate()
                 ->first();
 
-            if (!$stock) {
+            if (! $stock) {
                 $stock = new VariantStock([
                     'gudang_id'          => $gudang->id,
                     'product_variant_id' => $variantId,
@@ -13347,7 +14079,6 @@ class VariantStockService
                 // baris baru yang baru dibuat tidak perlu di-lock ulang
             }
 
-            // 3) Normalisasi tanggal (422 bila invalid)
             try {
                 $received = $receivedAt ? Carbon::parse($receivedAt) : now();
             } catch (\Throwable $e) {
@@ -13367,13 +14098,10 @@ class VariantStockService
                 }
             }
 
-            // 4) Auto-generate lot_no bila kosong
             if ($lotNo === null || trim($lotNo) === '') {
-                // Contoh pola: LOT-YYYYMMDD-G<gudang>-<4digit>
                 $lotNo = sprintf('LOT-%s-G%02d-%04d', now()->format('Ymd'), $gudang->id, random_int(0, 9999));
             }
 
-            // 5) Update agregat
             $stock->qty += (int) $qty;
             $stock->save();
 
@@ -13383,22 +14111,20 @@ class VariantStockService
                 'gudang_id'          => $gudang->id,
                 'product_variant_id' => $variantId,
                 'lot_no'             => $lotNo,
-                'received_at'        => $received,   // Carbon instance → aman untuk pgsql
-                'expires_at'         => $expires,    // 'Y-m-d' atau null
+                'received_at'        => $received,
+                'expires_at'         => $expires,
                 'qty_received'       => (int) $qty,
                 'qty_remaining'      => (int) $qty,
                 'unit_cost'          => $unitCost,
-                // jika StockLot tidak punya kolom 'note/ref_type/ref_id', jangan set di sini
             ]);
 
-            // 7) Ledger IN
             StockMovement::create([
                 'cabang_id'          => $gudang->cabang_id,
                 'gudang_id'          => $gudang->id,
                 'product_variant_id' => $variantId,
                 'stock_lot_id'       => $lot->id,
                 'type'               => 'IN',
-                'qty'                => (int) $qty,     // positif untuk IN
+                'qty'                => (int) $qty,
                 'unit_cost'          => $unitCost,
                 'ref_type'           => $refType,
                 'ref_id'             => $refId,
@@ -13409,10 +14135,6 @@ class VariantStockService
         });
     }
 
-    /**
-     * Pengeluaran stok per FIFO ketika penjualan dibayar.
-     * Membuat alokasi lot untuk audit & COGS.
-     */
     public function allocateFifoAndDeduct(
         int $gudangId,
         int $variantId,
@@ -13421,20 +14143,18 @@ class VariantStockService
         ?string $note = null,
         ?string $refType = 'SALE',
         ?string $refId = null,
-        ?int $cabangId = null, // opsional; jika null akan diambil dari gudang
+        ?int $cabangId = null,
     ): void {
         DB::transaction(function () use ($gudangId, $variantId, $orderItemId, $qty, $note, $refType, $refId, $cabangId) {
             if ($qty <= 0) {
                 throw new RuntimeException('Qty keluaran harus > 0');
             }
 
-            // Pastikan cabang_id
             if ($cabangId === null) {
-                $gudang = Gudang::query()->with('cabang')->findOrFail($gudangId);
+                $gudang   = Gudang::query()->with('cabang')->findOrFail($gudangId);
                 $cabangId = (int) $gudang->cabang_id;
             }
 
-            // Ambil lot tertua (received_at ASC, fallback created_at ASC)
             $lots = StockLot::query()
                 ->where('gudang_id', $gudangId)
                 ->where('product_variant_id', $variantId)
@@ -13446,35 +14166,36 @@ class VariantStockService
             $remain = (int) $qty;
 
             foreach ($lots as $lot) {
-                if ($remain <= 0) break;
+                if ($remain <= 0) {
+                    break;
+                }
 
-                $take = min($remain, (int)$lot->qty_remaining);
-                if ($take <= 0) continue;
+                $take = min($remain, (int) $lot->qty_remaining);
+                if ($take <= 0) {
+                    continue;
+                }
 
-                // Kurangi sisa lot
                 $lot->qty_remaining -= $take;
                 $lot->save();
 
-                // Ledger OUT (qty negatif)
                 StockMovement::create([
-                    'cabang_id' => $cabangId,
-                    'gudang_id' => $gudangId,
+                    'cabang_id'          => $cabangId,
+                    'gudang_id'          => $gudangId,
                     'product_variant_id' => $variantId,
-                    'stock_lot_id' => $lot->id,
-                    'type' => 'OUT',
-                    'qty' => -$take,
-                    'unit_cost' => $lot->unit_cost,
-                    'ref_type' => $refType,
-                    'ref_id' => $refId ?? (string)$orderItemId,
-                    'note' => $note ?? 'SALE',
+                    'stock_lot_id'       => $lot->id,
+                    'type'               => 'OUT',
+                    'qty'                => -$take,
+                    'unit_cost'          => $lot->unit_cost,
+                    'ref_type'           => $refType,
+                    'ref_id'             => $refId ?? (string) $orderItemId,
+                    'note'               => $note ?? 'SALE',
                 ]);
 
-                // Jejak alokasi lot ke item order
                 OrderItemLotAllocation::create([
                     'order_item_id' => $orderItemId,
-                    'stock_lot_id' => $lot->id,
+                    'stock_lot_id'  => $lot->id,
                     'qty_allocated' => $take,
-                    'unit_cost' => $lot->unit_cost,
+                    'unit_cost'     => $lot->unit_cost,
                 ]);
 
                 $remain -= $take;
@@ -13484,7 +14205,6 @@ class VariantStockService
                 throw new RuntimeException('Stok tidak mencukupi per FIFO (lot habis).');
             }
 
-        // Turunkan agregat variant_stocks
             /** @var VariantStock $stock */
             $stock = VariantStock::query()
                 ->where('gudang_id', $gudangId)
@@ -13492,11 +14212,11 @@ class VariantStockService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($stock->qty < (int)$qty) {
+            if ($stock->qty < (int) $qty) {
                 throw new RuntimeException('Stok agregat kurang (inkonsisten).');
             }
 
-            $stock->qty -= (int)$qty;
+            $stock->qty -= (int) $qty;
             $stock->save();
         });
     }
@@ -13579,7 +14299,7 @@ class XenditService
 
 ## routes/api.php
 
-- SHA: `44ca73f7c880`  
+- SHA: `70084cc45494`  
 - Ukuran: 12 KB
 
 **Ringkasan Routes (deteksi heuristik):**
@@ -13633,6 +14353,7 @@ class XenditService
 | DELETE | `/products/{product}/media/{media}` | `ProductMediaController` | `destroy` |
 | GET | `/stocks` | `VariantStockController` | `index` |
 | GET | `/stocks/rop` | `VariantStockController` | `ropList` |
+| GET | `/stock-lots` | `StockLotController` | `index` |
 | POST | `/stock-lots` | `StockLotController` | `store` |
 | GET | `/stocks/{stock}` | `VariantStockController` | `show` |
 | POST | `/stocks` | `VariantStockController` | `store` |
@@ -13640,8 +14361,6 @@ class XenditService
 | POST | `/stocks/{stock}/adjust` | `VariantStockController` | `adjust` |
 | DELETE | `/stocks/{stock}` | `VariantStockController` | `destroy` |
 | GET | `/orders/{order}/print` | `OrderController` | `print` |
-| GET | `/orders` | `OrderController` | `index` |
-| GET | `/orders/{order}` | `OrderController` | `show` |
 | POST | `/cart/quote` | `OrderController` | `quote` |
 | POST | `/checkout` | `OrderController` | `checkout` |
 | PUT | `/orders/{order}` | `OrderController` | `update` |
@@ -13682,6 +14401,7 @@ class XenditService
 | GET | `/dashboard/chart7d` | `DashboardController` | `chart7d` |
 | GET | `/dashboard/top-products` | `DashboardController` | `topProducts` |
 | GET | `/dashboard/low-stock` | `DashboardController` | `lowStock` |
+| GET | `/dashboard/latest-orders` | `DashboardController` | `latestOrders` |
 | GET | `/dashboard/quick-actions` | `DashboardController` | `quickActions` |
 | GET | `/settings` | `SettingsController` | `index` |
 | POST | `/settings/upsert` | `SettingsController` | `upsert` |
@@ -13711,31 +14431,31 @@ class XenditService
 ```php
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AccountingReportController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CabangController;
-use App\Http\Controllers\Api\GudangController;
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\ProductVariantController;
-use App\Http\Controllers\Api\ProductMediaController;
-use App\Http\Controllers\Api\VariantStockController;
-use App\Http\Controllers\Api\Inventory\StockLotController;
-use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\OrdersController;
-use App\Http\Controllers\Api\DeliveriesController;
 use App\Http\Controllers\Api\CashController;
-use App\Http\Controllers\Api\FeeEntryController;
-use App\Http\Controllers\Api\FeeController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomersController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\SettingsController;
-use App\Http\Controllers\Api\AccountController;
-use App\Http\Controllers\Api\JournalController;
+use App\Http\Controllers\Api\DeliveriesController;
+use App\Http\Controllers\Api\FeeController;
+use App\Http\Controllers\Api\FeeEntryController;
 use App\Http\Controllers\Api\FiscalPeriodController;
-use App\Http\Controllers\Api\AccountingReportController;
+use App\Http\Controllers\Api\GudangController;
+use App\Http\Controllers\Api\Inventory\StockLotController;
+use App\Http\Controllers\Api\JournalController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrdersController;
 use App\Http\Controllers\Api\PaymentWebhookController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductMediaController;
+use App\Http\Controllers\Api\ProductVariantController;
+use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VariantStockController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // public
@@ -13806,19 +14526,17 @@ Route::prefix('v1')->group(function () {
         // Stok Gudang
         Route::get('/stocks', [VariantStockController::class, 'index']);
         Route::get('/stocks/rop', [VariantStockController::class, 'ropList']);
+        Route::get('/stock-lots', [StockLotController::class, 'index']);
         Route::post('/stock-lots', [StockLotController::class, 'store']);
         Route::get('/stocks/{stock}', [VariantStockController::class, 'show']);
-        Route::post('/stocks', [VariantStockController::class, 'store']);   // set stok awal / upsert
-        Route::patch('/stocks/{stock}', [VariantStockController::class, 'update']);  // update min_stok
-        Route::post('/stocks/{stock}/adjust', [VariantStockController::class, 'adjust']);  // adjust +/-
-        Route::delete('/stocks/{stock}', [VariantStockController::class, 'destroy']); // hard delete
+        Route::post('/stocks', [VariantStockController::class, 'store']);                 // set stok awal / upsert
+        Route::patch('/stocks/{stock}', [VariantStockController::class, 'update']);       // update min_stok
+        Route::post('/stocks/{stock}/adjust', [VariantStockController::class, 'adjust']); // adjust +/-
+        Route::delete('/stocks/{stock}', [VariantStockController::class, 'destroy']);     // hard delete
 
         // POS — Orders
         // Print receipt (HTML)
         Route::get('/orders/{order}/print', [OrderController::class, 'print'])->whereNumber('order');
-
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::get('/orders/{order}', [OrderController::class, 'show'])->whereNumber('order');
 
         // Cart & Quote
         Route::post('/cart/quote', [OrderController::class, 'quote']);
@@ -13836,8 +14554,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->whereNumber('order');
 
         Route::get('/orders', [OrdersController::class, 'index']);
-        Route::get('/orders/{order}',         [OrdersController::class, 'show']);
-        Route::put('/orders/{order}/items',   [OrdersController::class, 'updateItems']);
+        Route::get('/orders/{order}', [OrdersController::class, 'show']);
+        Route::put('/orders/{order}/items', [OrdersController::class, 'updateItems']);
         Route::post('/orders/{order}/reprint', [OrdersController::class, 'reprint']);
         Route::post('/orders/{order}/resend-wa', [OrdersController::class, 'resendWA']);
         Route::post('/orders/{order}/cash-position', [OrderController::class, 'setCashPosition'])
@@ -13849,26 +14567,26 @@ Route::prefix('v1')->group(function () {
         Route::get('/deliveries/{id}', [DeliveriesController::class, 'show']);
         Route::post('/deliveries', [DeliveriesController::class, 'store']);
 
-        // custom actions
-        Route::post('/deliveries/{id}/assign', [DeliveriesController::class, 'assign']); // json: {assigned_to:int}
+                                                                                               // custom actions
+        Route::post('/deliveries/{id}/assign', [DeliveriesController::class, 'assign']);       // json: {assigned_to:int}
         Route::post('/deliveries/{id}/status', [DeliveriesController::class, 'updateStatus']); // multipart/form-data supported
-        Route::post('/deliveries/{id}/events', [DeliveriesController::class, 'addEvent']); // multipart/form-data
+        Route::post('/deliveries/{id}/events', [DeliveriesController::class, 'addEvent']);     // multipart/form-data
 
         // Cash (M8)
         Route::get('cash/holders', [CashController::class, 'holders']);
         Route::post('cash/holders', [CashController::class, 'storeHolder']);
-        Route::get('cash/moves',   [CashController::class, 'moves']);
-        Route::post('cash/moves',  [CashController::class, 'store']);
+        Route::get('cash/moves', [CashController::class, 'moves']);
+        Route::post('cash/moves', [CashController::class, 'store']);
         Route::post('cash/moves/{move}/approve', [CashController::class, 'approve']);
-        Route::post('cash/moves/{move}/reject',  [CashController::class, 'reject']);
-        Route::delete('cash/moves/{move}',       [CashController::class, 'destroy']);
+        Route::post('cash/moves/{move}/reject', [CashController::class, 'reject']);
+        Route::delete('cash/moves/{move}', [CashController::class, 'destroy']);
 
         Route::apiResource('fees', FeeController::class)->only([
             'index',
             'show',
             'store',
             'update',
-            'destroy'
+            'destroy',
         ]);
         Route::get('/fee-entries', [FeeEntryController::class, 'index']);
         Route::get('/fee-entries/export', [FeeEntryController::class, 'export']);
@@ -13887,6 +14605,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/chart7d', [DashboardController::class, 'chart7d']);
         Route::get('/dashboard/top-products', [DashboardController::class, 'topProducts']);
         Route::get('/dashboard/low-stock', [DashboardController::class, 'lowStock']);
+        Route::get('/dashboard/latest-orders', [DashboardController::class, 'latestOrders']);
         Route::get('/dashboard/quick-actions', [DashboardController::class, 'quickActions']);
 
         Route::get('/settings', [SettingsController::class, 'index']);

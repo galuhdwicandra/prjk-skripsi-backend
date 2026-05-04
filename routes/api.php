@@ -1,30 +1,30 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AccountingReportController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CabangController;
-use App\Http\Controllers\Api\GudangController;
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\ProductVariantController;
-use App\Http\Controllers\Api\ProductMediaController;
-use App\Http\Controllers\Api\VariantStockController;
-use App\Http\Controllers\Api\Inventory\StockLotController;
-use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\OrdersController;
-use App\Http\Controllers\Api\DeliveriesController;
 use App\Http\Controllers\Api\CashController;
-use App\Http\Controllers\Api\FeeEntryController;
-use App\Http\Controllers\Api\FeeController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomersController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\SettingsController;
-use App\Http\Controllers\Api\AccountController;
-use App\Http\Controllers\Api\JournalController;
+use App\Http\Controllers\Api\DeliveriesController;
+use App\Http\Controllers\Api\FeeController;
+use App\Http\Controllers\Api\FeeEntryController;
 use App\Http\Controllers\Api\FiscalPeriodController;
-use App\Http\Controllers\Api\AccountingReportController;
+use App\Http\Controllers\Api\GudangController;
+use App\Http\Controllers\Api\Inventory\StockLotController;
+use App\Http\Controllers\Api\JournalController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrdersController;
 use App\Http\Controllers\Api\PaymentWebhookController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductMediaController;
+use App\Http\Controllers\Api\ProductVariantController;
+use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VariantStockController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // public
@@ -95,19 +95,17 @@ Route::prefix('v1')->group(function () {
         // Stok Gudang
         Route::get('/stocks', [VariantStockController::class, 'index']);
         Route::get('/stocks/rop', [VariantStockController::class, 'ropList']);
+        Route::get('/stock-lots', [StockLotController::class, 'index']);
         Route::post('/stock-lots', [StockLotController::class, 'store']);
         Route::get('/stocks/{stock}', [VariantStockController::class, 'show']);
-        Route::post('/stocks', [VariantStockController::class, 'store']);   // set stok awal / upsert
-        Route::patch('/stocks/{stock}', [VariantStockController::class, 'update']);  // update min_stok
-        Route::post('/stocks/{stock}/adjust', [VariantStockController::class, 'adjust']);  // adjust +/-
-        Route::delete('/stocks/{stock}', [VariantStockController::class, 'destroy']); // hard delete
+        Route::post('/stocks', [VariantStockController::class, 'store']);                 // set stok awal / upsert
+        Route::patch('/stocks/{stock}', [VariantStockController::class, 'update']);       // update min_stok
+        Route::post('/stocks/{stock}/adjust', [VariantStockController::class, 'adjust']); // adjust +/-
+        Route::delete('/stocks/{stock}', [VariantStockController::class, 'destroy']);     // hard delete
 
         // POS — Orders
         // Print receipt (HTML)
         Route::get('/orders/{order}/print', [OrderController::class, 'print'])->whereNumber('order');
-
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::get('/orders/{order}', [OrderController::class, 'show'])->whereNumber('order');
 
         // Cart & Quote
         Route::post('/cart/quote', [OrderController::class, 'quote']);
@@ -125,8 +123,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->whereNumber('order');
 
         Route::get('/orders', [OrdersController::class, 'index']);
-        Route::get('/orders/{order}',         [OrdersController::class, 'show']);
-        Route::put('/orders/{order}/items',   [OrdersController::class, 'updateItems']);
+        Route::get('/orders/{order}', [OrdersController::class, 'show']);
+        Route::put('/orders/{order}/items', [OrdersController::class, 'updateItems']);
         Route::post('/orders/{order}/reprint', [OrdersController::class, 'reprint']);
         Route::post('/orders/{order}/resend-wa', [OrdersController::class, 'resendWA']);
         Route::post('/orders/{order}/cash-position', [OrderController::class, 'setCashPosition'])
@@ -138,26 +136,26 @@ Route::prefix('v1')->group(function () {
         Route::get('/deliveries/{id}', [DeliveriesController::class, 'show']);
         Route::post('/deliveries', [DeliveriesController::class, 'store']);
 
-        // custom actions
-        Route::post('/deliveries/{id}/assign', [DeliveriesController::class, 'assign']); // json: {assigned_to:int}
+                                                                                               // custom actions
+        Route::post('/deliveries/{id}/assign', [DeliveriesController::class, 'assign']);       // json: {assigned_to:int}
         Route::post('/deliveries/{id}/status', [DeliveriesController::class, 'updateStatus']); // multipart/form-data supported
-        Route::post('/deliveries/{id}/events', [DeliveriesController::class, 'addEvent']); // multipart/form-data
+        Route::post('/deliveries/{id}/events', [DeliveriesController::class, 'addEvent']);     // multipart/form-data
 
         // Cash (M8)
         Route::get('cash/holders', [CashController::class, 'holders']);
         Route::post('cash/holders', [CashController::class, 'storeHolder']);
-        Route::get('cash/moves',   [CashController::class, 'moves']);
-        Route::post('cash/moves',  [CashController::class, 'store']);
+        Route::get('cash/moves', [CashController::class, 'moves']);
+        Route::post('cash/moves', [CashController::class, 'store']);
         Route::post('cash/moves/{move}/approve', [CashController::class, 'approve']);
-        Route::post('cash/moves/{move}/reject',  [CashController::class, 'reject']);
-        Route::delete('cash/moves/{move}',       [CashController::class, 'destroy']);
+        Route::post('cash/moves/{move}/reject', [CashController::class, 'reject']);
+        Route::delete('cash/moves/{move}', [CashController::class, 'destroy']);
 
         Route::apiResource('fees', FeeController::class)->only([
             'index',
             'show',
             'store',
             'update',
-            'destroy'
+            'destroy',
         ]);
         Route::get('/fee-entries', [FeeEntryController::class, 'index']);
         Route::get('/fee-entries/export', [FeeEntryController::class, 'export']);
@@ -176,6 +174,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/chart7d', [DashboardController::class, 'chart7d']);
         Route::get('/dashboard/top-products', [DashboardController::class, 'topProducts']);
         Route::get('/dashboard/low-stock', [DashboardController::class, 'lowStock']);
+        Route::get('/dashboard/latest-orders', [DashboardController::class, 'latestOrders']);
         Route::get('/dashboard/quick-actions', [DashboardController::class, 'quickActions']);
 
         Route::get('/settings', [SettingsController::class, 'index']);

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict qbvVKm9L1mgd4XmixRWgKQM7hi7m0pGk2GwHyU5BO75wOc2Eeh5VauJxPj0UPGg
+\restrict I9mhW57a7e7oTySr8Se5pK6avPEFb5dTYA3hvOMpKkJ22aiVEvZnvHjsqhfpPZN
 
 -- Dumped from database version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
@@ -2201,6 +2201,7 @@ COPY "public"."audit_logs" ("id", "actor_type", "actor_id", "action", "model", "
 338	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-02-01 02:55:49	2026-02-01 02:55:49	\N
 339	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-02-01 02:55:49	2026-02-01 02:55:49	\N
 340	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-02-01 02:55:49	2026-02-01 02:55:49	\N
+522	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:25	2026-04-11 10:04:25	\N
 341	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-01-25T00:00:00.000000Z","to":"2026-02-01T23:59:59.999999Z"}	2026-02-01 02:55:49	2026-02-01 02:55:49	\N
 342	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-02-01 02:55:49	2026-02-01 02:55:49	\N
 343	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-02-01 02:55:50	2026-02-01 02:55:50	\N
@@ -2340,6 +2341,268 @@ COPY "public"."audit_logs" ("id", "actor_type", "actor_id", "action", "model", "
 508	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-10 09:46:17	2026-04-10 09:46:17	\N
 509	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-10 09:46:17	2026-04-10 09:46:17	\N
 510	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-10 09:46:17	2026-04-10 09:46:17	\N
+511	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+512	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+513	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+514	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+515	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+516	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+517	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+518	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+519	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+520	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:05	2026-04-11 10:04:05	\N
+521	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:04:25	2026-04-11 10:04:25	\N
+523	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:04:25	2026-04-11 10:04:25	\N
+524	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:04:25	2026-04-11 10:04:25	\N
+525	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:25	2026-04-11 10:04:25	\N
+526	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:04:26	2026-04-11 10:04:26	\N
+527	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:26	2026-04-11 10:04:26	\N
+528	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:04:26	2026-04-11 10:04:26	\N
+529	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:04:26	2026-04-11 10:04:26	\N
+530	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:04:26	2026-04-11 10:04:26	\N
+531	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:53:18	2026-04-11 10:53:18	\N
+532	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+533	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+534	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+535	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+536	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+537	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+538	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+539	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+540	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:53:19	2026-04-11 10:53:19	\N
+541	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+542	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+543	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+544	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+545	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+546	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+547	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+548	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+549	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+550	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 10:54:12	2026-04-11 10:54:12	\N
+551	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:18:49	2026-04-11 12:18:49	\N
+552	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:18:49	2026-04-11 12:18:49	\N
+553	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 12:18:50	2026-04-11 12:18:50	\N
+554	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 12:18:50	2026-04-11 12:18:50	\N
+555	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 12:18:51	2026-04-11 12:18:51	\N
+556	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+557	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+558	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+559	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+560	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+561	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+562	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+563	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+564	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+565	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-11 12:19:07	2026-04-11 12:19:07	\N
+566	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:19:27	2026-04-11 12:19:27	\N
+567	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+568	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+569	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+570	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+571	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+572	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+573	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+574	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+575	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:28	2026-04-11 12:19:28	\N
+576	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:37	2026-04-11 12:19:37	\N
+577	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:19:37	2026-04-11 12:19:37	\N
+578	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-04-11 12:19:37	2026-04-11 12:19:37	\N
+579	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-04-11 12:19:37	2026-04-11 12:19:37	\N
+580	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:37	2026-04-11 12:19:37	\N
+581	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:19:37	2026-04-11 12:19:37	\N
+582	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:37	2026-04-11 12:19:37	\N
+583	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-04-11 12:19:38	2026-04-11 12:19:38	\N
+584	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-04-11 12:19:38	2026-04-11 12:19:38	\N
+585	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-04-11 12:19:38	2026-04-11 12:19:38	\N
+586	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+587	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+588	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+589	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+590	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+591	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-04T00:00:00.000000Z","to":"2026-04-11T23:59:59.999999Z"}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+592	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+593	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+594	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+595	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-04-11 12:20:21	2026-04-11 12:20:21	\N
+598	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-05T00:00:00.000000Z","to":"2026-04-12T23:59:59.999999Z"}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+599	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-05T00:00:00.000000Z","to":"2026-04-12T23:59:59.999999Z"}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+600	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+601	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+602	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+603	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+604	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+605	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+606	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+607	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-12 10:50:28	2026-04-12 10:50:28	\N
+608	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 09:38:49	2026-04-30 09:38:49	\N
+609	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 09:38:49	2026-04-30 09:38:49	\N
+610	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 09:38:49	2026-04-30 09:38:49	\N
+611	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 09:38:50	2026-04-30 09:38:50	\N
+612	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 09:38:50	2026-04-30 09:38:50	\N
+613	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 09:38:50	2026-04-30 09:38:50	\N
+614	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 09:38:50	2026-04-30 09:38:50	\N
+615	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 09:38:50	2026-04-30 09:38:50	\N
+616	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 09:38:50	2026-04-30 09:38:50	\N
+617	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 09:38:50	2026-04-30 09:38:50	\N
+618	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 09:39:21	2026-04-30 09:39:21	\N
+619	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 09:39:21	2026-04-30 09:39:21	\N
+620	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+621	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+622	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+623	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+624	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+625	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+626	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+627	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 09:39:22	2026-04-30 09:39:22	\N
+628	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+629	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+630	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+631	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+632	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+633	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+634	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+635	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 09:40:14	2026-04-30 09:40:14	\N
+636	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 09:40:15	2026-04-30 09:40:15	\N
+637	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 09:40:15	2026-04-30 09:40:15	\N
+638	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 10:06:52	2026-04-30 10:06:52	\N
+639	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 10:06:52	2026-04-30 10:06:52	\N
+640	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-04-30 10:06:52	2026-04-30 10:06:52	\N
+641	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-23T00:00:00.000000Z","to":"2026-04-30T23:59:59.999999Z"}	2026-04-30 10:06:52	2026-04-30 10:06:52	\N
+642	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 10:06:52	2026-04-30 10:06:52	\N
+643	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-04-30 10:06:52	2026-04-30 10:06:52	\N
+644	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 10:06:52	2026-04-30 10:06:52	\N
+645	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-04-30 10:06:53	2026-04-30 10:06:53	\N
+646	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 10:06:53	2026-04-30 10:06:53	\N
+647	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-04-30 10:06:53	2026-04-30 10:06:53	\N
+648	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 14:58:50	2026-05-03 14:58:50	\N
+649	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 14:58:50	2026-05-03 14:58:50	\N
+650	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-03 14:58:50	2026-05-03 14:58:50	\N
+651	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-03 14:58:50	2026-05-03 14:58:50	\N
+652	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-03 14:58:50	2026-05-03 14:58:50	\N
+653	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-03 14:58:50	2026-05-03 14:58:50	\N
+654	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-03 14:58:51	2026-05-03 14:58:51	\N
+655	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-03 14:58:51	2026-05-03 14:58:51	\N
+656	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-03 14:58:53	2026-05-03 14:58:53	\N
+657	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-03 14:58:54	2026-05-03 14:58:54	\N
+658	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+659	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+660	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+661	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+662	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+663	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+664	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+665	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+666	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+667	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-03 15:03:03	2026-05-03 15:03:03	\N
+668	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:06:46	2026-05-03 15:06:46	\N
+669	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-03 15:06:46	2026-05-03 15:06:46	\N
+670	USER	3	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:06:46	2026-05-03 15:06:46	\N
+671	USER	3	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-03 15:06:46	2026-05-03 15:06:46	\N
+672	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-03 15:06:46	2026-05-03 15:06:46	\N
+673	USER	3	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-03 15:06:46	2026-05-03 15:06:46	\N
+674	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-03 15:06:46	2026-05-03 15:06:46	\N
+675	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-03 15:06:47	2026-05-03 15:06:47	\N
+676	USER	3	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-03 15:06:47	2026-05-03 15:06:47	\N
+677	USER	3	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-03 15:06:47	2026-05-03 15:06:47	\N
+678	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+679	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+680	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+681	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+682	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+683	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+684	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+685	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-03 15:06:52	2026-05-03 15:06:52	\N
+686	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-03 15:06:53	2026-05-03 15:06:53	\N
+687	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-03 15:06:53	2026-05-03 15:06:53	\N
+688	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:07:23	2026-05-03 15:07:23	\N
+689	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-03 15:07:23	2026-05-03 15:07:23	\N
+690	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+691	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+692	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+693	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-26T00:00:00.000000Z","to":"2026-05-03T23:59:59.999999Z"}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+694	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+695	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+696	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+697	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-03 15:07:24	2026-05-03 15:07:24	\N
+698	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:22:52	2026-05-04 09:22:52	\N
+699	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:22:52	2026-05-04 09:22:52	\N
+700	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-04 09:22:52	2026-05-04 09:22:52	\N
+701	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-04 09:22:52	2026-05-04 09:22:52	\N
+702	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-04 09:22:52	2026-05-04 09:22:52	\N
+703	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-04 09:22:52	2026-05-04 09:22:52	\N
+704	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-04 09:22:53	2026-05-04 09:22:53	\N
+705	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-04 09:22:53	2026-05-04 09:22:53	\N
+706	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-04 09:22:53	2026-05-04 09:22:53	\N
+707	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-04 09:22:53	2026-05-04 09:22:53	\N
+708	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+709	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+710	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+711	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+712	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+713	USER	1	DASHBOARD.KPIS	dashboard	0	{"cabang_id":null,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+714	USER	1	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":null}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+715	USER	1	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":null,"limit":5}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+716	USER	1	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":null,"threshold":null}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+717	USER	1	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":null}	2026-05-04 09:27:29	2026-05-04 09:27:29	\N
+718	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+719	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+720	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+721	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+722	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+723	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+724	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+725	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+726	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+727	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:11	2026-05-04 09:28:11	\N
+728	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:28:43	2026-05-04 09:28:43	\N
+729	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 09:28:43	2026-05-04 09:28:43	\N
+730	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 09:28:43	2026-05-04 09:28:43	\N
+731	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:43	2026-05-04 09:28:43	\N
+732	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:44	2026-05-04 09:28:44	\N
+733	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 09:28:44	2026-05-04 09:28:44	\N
+734	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:44	2026-05-04 09:28:44	\N
+735	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 09:28:44	2026-05-04 09:28:44	\N
+736	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 09:28:44	2026-05-04 09:28:44	\N
+737	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 09:28:44	2026-05-04 09:28:44	\N
+738	USER	2	LOG_CASH	cash_transactions	45	{"after":{"session_id":1,"type":"IN","amount":"10000.00","source":"ORDER","ref_type":"ORDER","ref_id":45,"note":"ORDER#PRM-1777861821-C1","occurred_at":"2026-05-04T02:30:21.000000Z","updated_at":"2026-05-04T02:30:21.000000Z","created_at":"2026-05-04T02:30:21.000000Z","id":45}}	2026-05-04 09:30:21	2026-05-04 09:30:21	\N
+739	USER	2	CASH_IN_HOLDER	cash_holders	1	{"before":{"balance":"160000.00"},"after":{"balance":"170000.00"},"ref":{"type":"ORDER","id":45}}	2026-05-04 09:30:21	2026-05-04 09:30:21	\N
+740	USER	2	LOG_CASH	cash_transactions	46	{"after":{"session_id":1,"type":"IN","amount":"10000.00","source":"ORDER","ref_type":"ORDER","ref_id":46,"note":"ORDER#PRM-1777861821-C1","occurred_at":"2026-05-04T03:06:03.000000Z","updated_at":"2026-05-04T03:06:03.000000Z","created_at":"2026-05-04T03:06:03.000000Z","id":46}}	2026-05-04 10:06:03	2026-05-04 10:06:03	\N
+741	USER	2	CASH_IN_HOLDER	cash_holders	1	{"before":{"balance":"170000.00"},"after":{"balance":"180000.00"},"ref":{"type":"ORDER","id":46}}	2026-05-04 10:06:03	2026-05-04 10:06:03	\N
+742	USER	2	JOURNAL_POSTED	JournalEntry	11	{"number":"CASH-MOVE-2","posted_at":"2026-05-04 10:07:12"}	2026-05-04 10:07:12	2026-05-04 10:07:12	2026-05-04 10:07:12
+743	USER	2	JOURNAL_POSTED	JournalEntry	12	{"number":"PAY-PRM-1769890188-C1-11","posted_at":"2026-05-04 10:07:14"}	2026-05-04 10:07:14	2026-05-04 10:07:14	2026-05-04 10:07:14
+744	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 10:54:35	2026-05-04 10:54:35	\N
+745	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+746	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+747	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+748	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+749	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+750	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+751	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+752	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 10:54:36	2026-05-04 10:54:36	\N
+753	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 10:54:37	2026-05-04 10:54:37	\N
+754	USER	2	LOG_CASH	cash_transactions	47	{"after":{"session_id":1,"type":"IN","amount":"20000.00","source":"ORDER","ref_type":"ORDER","ref_id":47,"note":"ORDER#PRM-1777867559-C1","occurred_at":"2026-05-04T04:05:59.000000Z","updated_at":"2026-05-04T04:05:59.000000Z","created_at":"2026-05-04T04:05:59.000000Z","id":47}}	2026-05-04 11:05:59	2026-05-04 11:05:59	\N
+755	USER	2	CASH_IN_HOLDER	cash_holders	1	{"before":{"balance":"180000.00"},"after":{"balance":"200000.00"},"ref":{"type":"ORDER","id":47}}	2026-05-04 11:05:59	2026-05-04 11:05:59	\N
+756	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 11:27:17	2026-05-04 11:27:17	\N
+757	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+758	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+759	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+760	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+761	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+762	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+763	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+764	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+765	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 11:27:18	2026-05-04 11:27:18	\N
+766	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 11:47:46	2026-05-04 11:47:46	\N
+767	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 11:47:46	2026-05-04 11:47:46	\N
+768	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
+769	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
+770	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
+771	USER	2	DASHBOARD.KPIS	dashboard	0	{"cabang_id":1,"from":"2026-04-27T00:00:00.000000Z","to":"2026-05-04T23:59:59.999999Z"}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
+772	USER	2	DASHBOARD.CHART7D	dashboard	0	{"cabang_id":1}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
+773	USER	2	DASHBOARD.TOPPRODUCTS	dashboard	0	{"cabang_id":1,"limit":5}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
+774	USER	2	DASHBOARD.LOWSTOCK	dashboard	0	{"cabang_id":1,"threshold":null}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
+775	USER	2	DASHBOARD.QUICKACTIONS	dashboard	0	{"cabang_id":1}	2026-05-04 11:47:47	2026-05-04 11:47:47	\N
 \.
 
 
@@ -2365,23 +2628,11 @@ COPY "public"."cabangs" ("id", "nama", "kota", "alamat", "telepon", "jam_operasi
 --
 
 COPY "public"."cache" ("key", "value", "expiration") FROM stdin;
-sistem-pos-prime-cache-dash:kpi:c1:2026-01-24-2026-01-31	a:6:{s:12:"orders_total";i:7;s:11:"orders_paid";i:7;s:7:"revenue";d:1040000;s:10:"avg_ticket";d:148571.42857142858;s:13:"paid_rate_pct";d:100;s:10:"validation";a:3:{s:15:"paid_amount_sum";d:1040000;s:23:"orders_vs_payments_diff";d:0;s:13:"is_consistent";b:1;}}	1769878715
-sistem-pos-prime-cache-dash:chart7d:c1:2026-01-25	a:7:{i:0;a:3:{s:4:"date";s:10:"2026-01-25";s:6:"orders";i:0;s:7:"revenue";d:0;}i:1;a:3:{s:4:"date";s:10:"2026-01-26";s:6:"orders";i:0;s:7:"revenue";d:0;}i:2;a:3:{s:4:"date";s:10:"2026-01-27";s:6:"orders";i:0;s:7:"revenue";d:0;}i:3;a:3:{s:4:"date";s:10:"2026-01-28";s:6:"orders";i:0;s:7:"revenue";d:0;}i:4;a:3:{s:4:"date";s:10:"2026-01-29";s:6:"orders";i:0;s:7:"revenue";d:0;}i:5;a:3:{s:4:"date";s:10:"2026-01-30";s:6:"orders";i:0;s:7:"revenue";d:0;}i:6;a:3:{s:4:"date";s:10:"2026-01-31";s:6:"orders";i:7;s:7:"revenue";d:1040000;}}	1769878716
-sistem-pos-prime-cache-dash:kpi:c:2026-01-25-2026-02-01	a:6:{s:12:"orders_total";i:8;s:11:"orders_paid";i:8;s:7:"revenue";d:1280000;s:10:"avg_ticket";d:160000;s:13:"paid_rate_pct";d:100;s:10:"validation";a:3:{s:15:"paid_amount_sum";d:1280000;s:23:"orders_vs_payments_diff";d:0;s:13:"is_consistent";b:1;}}	1769889385
-sistem-pos-prime-cache-dash:chart7d:c:2026-01-26	a:7:{i:0;a:3:{s:4:"date";s:10:"2026-01-26";s:6:"orders";i:0;s:7:"revenue";d:0;}i:1;a:3:{s:4:"date";s:10:"2026-01-27";s:6:"orders";i:0;s:7:"revenue";d:0;}i:2;a:3:{s:4:"date";s:10:"2026-01-28";s:6:"orders";i:0;s:7:"revenue";d:0;}i:3;a:3:{s:4:"date";s:10:"2026-01-29";s:6:"orders";i:0;s:7:"revenue";d:0;}i:4;a:3:{s:4:"date";s:10:"2026-01-30";s:6:"orders";i:0;s:7:"revenue";d:0;}i:5;a:3:{s:4:"date";s:10:"2026-01-31";s:6:"orders";i:7;s:7:"revenue";d:1040000;}i:6;a:3:{s:4:"date";s:10:"2026-02-01";s:6:"orders";i:1;s:7:"revenue";d:240000;}}	1769889385
-sistem-pos-prime-cache-dash:kpi:c1:2026-01-25-2026-02-01	a:6:{s:12:"orders_total";i:9;s:11:"orders_paid";i:9;s:7:"revenue";d:1440000;s:10:"avg_ticket";d:160000;s:13:"paid_rate_pct";d:100;s:10:"validation";a:3:{s:15:"paid_amount_sum";d:1440000;s:23:"orders_vs_payments_diff";d:0;s:13:"is_consistent";b:1;}}	1769928984
-sistem-pos-prime-cache-dash:chart7d:c1:2026-01-26	a:7:{i:0;a:3:{s:4:"date";s:10:"2026-01-26";s:6:"orders";i:0;s:7:"revenue";d:0;}i:1;a:3:{s:4:"date";s:10:"2026-01-27";s:6:"orders";i:0;s:7:"revenue";d:0;}i:2;a:3:{s:4:"date";s:10:"2026-01-28";s:6:"orders";i:0;s:7:"revenue";d:0;}i:3;a:3:{s:4:"date";s:10:"2026-01-29";s:6:"orders";i:0;s:7:"revenue";d:0;}i:4;a:3:{s:4:"date";s:10:"2026-01-30";s:6:"orders";i:0;s:7:"revenue";d:0;}i:5;a:3:{s:4:"date";s:10:"2026-01-31";s:6:"orders";i:7;s:7:"revenue";d:1040000;}i:6;a:3:{s:4:"date";s:10:"2026-02-01";s:6:"orders";i:2;s:7:"revenue";d:400000;}}	1769928984
-sistem-pos-prime-cache-dash:kpi:c1:2026-01-26-2026-02-02	a:6:{s:12:"orders_total";i:9;s:11:"orders_paid";i:9;s:7:"revenue";d:1440000;s:10:"avg_ticket";d:160000;s:13:"paid_rate_pct";d:100;s:10:"validation";a:3:{s:15:"paid_amount_sum";d:1440000;s:23:"orders_vs_payments_diff";d:0;s:13:"is_consistent";b:1;}}	1770049047
-sistem-pos-prime-cache-dash:chart7d:c1:2026-01-27	a:7:{i:0;a:3:{s:4:"date";s:10:"2026-01-27";s:6:"orders";i:0;s:7:"revenue";d:0;}i:1;a:3:{s:4:"date";s:10:"2026-01-28";s:6:"orders";i:0;s:7:"revenue";d:0;}i:2;a:3:{s:4:"date";s:10:"2026-01-29";s:6:"orders";i:0;s:7:"revenue";d:0;}i:3;a:3:{s:4:"date";s:10:"2026-01-30";s:6:"orders";i:0;s:7:"revenue";d:0;}i:4;a:3:{s:4:"date";s:10:"2026-01-31";s:6:"orders";i:7;s:7:"revenue";d:1040000;}i:5;a:3:{s:4:"date";s:10:"2026-02-01";s:6:"orders";i:2;s:7:"revenue";d:400000;}i:6;a:3:{s:4:"date";s:10:"2026-02-02";s:6:"orders";i:0;s:7:"revenue";d:0;}}	1770049048
-sistem-pos-prime-cache-dash:chart7d:c1:2026-01-29	a:7:{i:0;a:3:{s:4:"date";s:10:"2026-01-29";s:6:"orders";i:0;s:7:"revenue";d:0;}i:1;a:3:{s:4:"date";s:10:"2026-01-30";s:6:"orders";i:0;s:7:"revenue";d:0;}i:2;a:3:{s:4:"date";s:10:"2026-01-31";s:6:"orders";i:7;s:7:"revenue";d:1040000;}i:3;a:3:{s:4:"date";s:10:"2026-02-01";s:6:"orders";i:2;s:7:"revenue";d:400000;}i:4;a:3:{s:4:"date";s:10:"2026-02-02";s:6:"orders";i:0;s:7:"revenue";d:0;}i:5;a:3:{s:4:"date";s:10:"2026-02-03";s:6:"orders";i:0;s:7:"revenue";d:0;}i:6;a:3:{s:4:"date";s:10:"2026-02-04";s:6:"orders";i:0;s:7:"revenue";d:0;}}	1770143882
-sistem-pos-prime-cache-dash:kpi:c1:2026-01-28-2026-02-04	a:6:{s:12:"orders_total";i:9;s:11:"orders_paid";i:9;s:7:"revenue";d:1440000;s:10:"avg_ticket";d:160000;s:13:"paid_rate_pct";d:100;s:10:"validation";a:3:{s:15:"paid_amount_sum";d:1440000;s:23:"orders_vs_payments_diff";d:0;s:13:"is_consistent";b:1;}}	1770143882
-sistem-pos-prime-cache-dash:top:c1:l5	a:2:{i:0;a:4:{s:10:"variant_id";i:9;s:4:"name";s:12:"Kastangel - ";s:3:"qty";d:12;s:7:"revenue";d:960000;}i:1;a:4:{s:10:"variant_id";i:4;s:4:"name";s:12:"Kastangel - ";s:3:"qty";d:3;s:7:"revenue";d:480000;}}	1770143882
-sistem-pos-prime-cache-dash:low:c1:tmin	a:1:{i:0;a:6:{s:9:"gudang_id";i:1;s:10:"variant_id";i:6;s:3:"sku";s:3:"F-2";s:4:"name";s:11:"Nastar Keju";s:11:"qty_on_hand";d:10;s:9:"min_stock";d:12;}}	1770143882
-sistem-pos-prime-cache-spatie.permission.cache	a:3:{s:5:"alias";a:0:{}s:11:"permissions";a:0:{}s:5:"roles";a:0:{}}	1775875479
-sistem-pos-prime-cache-dash:kpi:c:2026-04-03-2026-04-10	a:6:{s:12:"orders_total";i:0;s:11:"orders_paid";i:0;s:7:"revenue";d:0;s:10:"avg_ticket";d:0;s:13:"paid_rate_pct";d:0;s:10:"validation";a:3:{s:15:"paid_amount_sum";d:0;s:23:"orders_vs_payments_diff";d:0;s:13:"is_consistent";b:1;}}	1775789237
-sistem-pos-prime-cache-dash:chart7d:c:2026-04-04	a:7:{i:0;a:3:{s:4:"date";s:10:"2026-04-04";s:6:"orders";i:0;s:7:"revenue";d:0;}i:1;a:3:{s:4:"date";s:10:"2026-04-05";s:6:"orders";i:0;s:7:"revenue";d:0;}i:2;a:3:{s:4:"date";s:10:"2026-04-06";s:6:"orders";i:0;s:7:"revenue";d:0;}i:3;a:3:{s:4:"date";s:10:"2026-04-07";s:6:"orders";i:0;s:7:"revenue";d:0;}i:4;a:3:{s:4:"date";s:10:"2026-04-08";s:6:"orders";i:0;s:7:"revenue";d:0;}i:5;a:3:{s:4:"date";s:10:"2026-04-09";s:6:"orders";i:0;s:7:"revenue";d:0;}i:6;a:3:{s:4:"date";s:10:"2026-04-10";s:6:"orders";i:0;s:7:"revenue";d:0;}}	1775789237
-sistem-pos-prime-cache-dash:low:c:tmin	a:1:{i:0;a:6:{s:9:"gudang_id";i:1;s:10:"variant_id";i:6;s:3:"sku";s:3:"F-2";s:4:"name";s:11:"Nastar Keju";s:11:"qty_on_hand";d:10;s:9:"min_stock";d:12;}}	1775789237
-sistem-pos-prime-cache-dash:top:c:l5	a:2:{i:0;a:4:{s:10:"variant_id";i:9;s:4:"name";s:12:"Kastangel - ";s:3:"qty";d:12;s:7:"revenue";d:960000;}i:1;a:4:{s:10:"variant_id";i:4;s:4:"name";s:12:"Kastangel - ";s:3:"qty";d:3;s:7:"revenue";d:480000;}}	1775789237
+sistem-pos-prime-cache-spatie.permission.cache	a:3:{s:5:"alias";a:0:{}s:11:"permissions";a:0:{}s:5:"roles";a:0:{}}	1777955207
+sistem-pos-prime-cache-dash:kpi:c1:2026-04-27-2026-05-04	a:6:{s:12:"orders_total";i:2;s:11:"orders_paid";i:2;s:7:"revenue";d:40000;s:10:"avg_ticket";d:20000;s:13:"paid_rate_pct";d:100;s:10:"validation";a:3:{s:15:"paid_amount_sum";d:40000;s:23:"orders_vs_payments_diff";d:0;s:13:"is_consistent";b:1;}}	1777870126
+sistem-pos-prime-cache-dash:chart7d:c1:2026-04-28	a:7:{i:0;a:3:{s:4:"date";s:10:"2026-04-28";s:6:"orders";i:0;s:7:"revenue";d:0;}i:1;a:3:{s:4:"date";s:10:"2026-04-29";s:6:"orders";i:0;s:7:"revenue";d:0;}i:2;a:3:{s:4:"date";s:10:"2026-04-30";s:6:"orders";i:0;s:7:"revenue";d:0;}i:3;a:3:{s:4:"date";s:10:"2026-05-01";s:6:"orders";i:0;s:7:"revenue";d:0;}i:4;a:3:{s:4:"date";s:10:"2026-05-02";s:6:"orders";i:0;s:7:"revenue";d:0;}i:5;a:3:{s:4:"date";s:10:"2026-05-03";s:6:"orders";i:0;s:7:"revenue";d:0;}i:6;a:3:{s:4:"date";s:10:"2026-05-04";s:6:"orders";i:2;s:7:"revenue";d:40000;}}	1777870126
+sistem-pos-prime-cache-dash:top:c1:l5	a:3:{i:0;a:4:{s:10:"variant_id";i:9;s:4:"name";s:12:"Kastangel - ";s:3:"qty";d:12;s:7:"revenue";d:960000;}i:1;a:4:{s:10:"variant_id";i:4;s:4:"name";s:12:"Kastangel - ";s:3:"qty";d:3;s:7:"revenue";d:480000;}i:2;a:4:{s:10:"variant_id";i:10;s:4:"name";s:14:"Macha Latte - ";s:3:"qty";d:2;s:7:"revenue";d:40000;}}	1777870126
+sistem-pos-prime-cache-dash:low:c1:tmin	a:1:{i:0;a:6:{s:9:"gudang_id";i:1;s:10:"variant_id";i:6;s:3:"sku";s:3:"F-2";s:4:"name";s:11:"Nastar Keju";s:11:"qty_on_hand";d:10;s:9:"min_stock";d:12;}}	1777870127
 \.
 
 
@@ -2400,7 +2651,7 @@ COPY "public"."cache_locks" ("key", "owner", "expiration") FROM stdin;
 COPY "public"."cash_holders" ("id", "cabang_id", "name", "balance", "created_at", "updated_at") FROM stdin;
 2	1	Brankas	0.00	2026-01-31 15:39:38	2026-01-31 15:39:38
 3	1	Bank	400000.00	2026-01-31 15:39:38	2026-02-01 02:57:20
-1	1	Kasir	160000.00	2026-01-31 15:39:38	2026-02-01 03:09:48
+1	1	Kasir	200000.00	2026-01-31 15:39:38	2026-05-04 11:05:59
 \.
 
 
@@ -2438,6 +2689,9 @@ COPY "public"."cash_transactions" ("id", "session_id", "type", "amount", "source
 9	2	IN	160000.00	ORDER	ORDER	9	ORDER#PRM-1769878478-C1	2026-01-31 23:54:50	2026-01-31 23:54:50	2026-01-31 23:54:50
 10	1	IN	240000.00	ORDER	ORDER	10	ORDER#PRM-1769881810-C1	2026-02-01 00:50:10	2026-02-01 00:50:10	2026-02-01 00:50:10
 11	1	IN	160000.00	ORDER	ORDER	11	ORDER#PRM-1769890188-C1	2026-02-01 03:09:48	2026-02-01 03:09:48	2026-02-01 03:09:48
+45	1	IN	10000.00	ORDER	ORDER	45	ORDER#PRM-1777861821-C1	2026-05-04 09:30:21	2026-05-04 09:30:21	2026-05-04 09:30:21
+46	1	IN	10000.00	ORDER	ORDER	46	ORDER#PRM-1777861821-C1	2026-05-04 10:06:03	2026-05-04 10:06:03	2026-05-04 10:06:03
+47	1	IN	20000.00	ORDER	ORDER	47	ORDER#PRM-1777867559-C1	2026-05-04 11:05:59	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2450,6 +2704,7 @@ COPY "public"."categories" ("id", "nama", "slug", "deskripsi", "is_active", "cre
 7	Tasty Class	tasty-class	\N	t	2026-01-31 16:11:38	2026-01-31 16:11:38
 8	Flavourful Class	flavourful-class	\N	t	2026-01-31 16:11:50	2026-01-31 16:12:01
 9	Tube Class	tube-class	\N	t	2026-01-31 16:12:12	2026-01-31 16:12:12
+10	Minuman	minuman	\N	t	2026-05-04 09:23:16	2026-05-04 09:23:16
 \.
 
 
@@ -2460,6 +2715,9 @@ COPY "public"."categories" ("id", "nama", "slug", "deskripsi", "is_active", "cre
 COPY "public"."customer_timelines" ("id", "customer_id", "event_type", "title", "note", "meta", "happened_at", "created_at", "updated_at") FROM stdin;
 1	1	NOTE	Customer created	\N	{"source": "POS"}	2026-01-31 17:11:36	2026-01-31 17:11:36	2026-01-31 17:11:36
 2	2	NOTE	Customer created	\N	{"source": "POS"}	2026-02-01 03:09:26	2026-02-01 03:09:26	2026-02-01 03:09:26
+35	35	NOTE	Customer created	\N	{"source": "POS"}	2026-04-11 12:20:51	2026-04-11 12:20:51	2026-04-11 12:20:51
+36	36	NOTE	Customer created	\N	{"source": "POS"}	2026-05-04 11:02:34	2026-05-04 11:02:34	2026-05-04 11:02:34
+37	37	NOTE	Customer created	\N	{"source": "POS"}	2026-05-04 11:06:27	2026-05-04 11:06:27	2026-05-04 11:06:27
 \.
 
 
@@ -2468,8 +2726,11 @@ COPY "public"."customer_timelines" ("id", "customer_id", "event_type", "title", 
 --
 
 COPY "public"."customers" ("id", "cabang_id", "nama", "phone", "email", "alamat", "catatan", "stage", "last_order_at", "total_spent", "total_orders", "created_at", "updated_at") FROM stdin;
-1	1	Galuh	081214695222	\N	\N	\N	ACTIVE	\N	0.00	0	2026-01-31 17:11:36	2026-01-31 17:11:36
 2	1	Irfan	082119664428	\N	\N	\N	ACTIVE	\N	0.00	0	2026-02-01 03:09:26	2026-02-01 03:09:26
+35	1	Jajang	0858545454	\N	\N	\N	ACTIVE	\N	0.00	0	2026-04-11 12:20:51	2026-04-11 12:20:51
+1	1	Galuh	081214695222	\N	Komplek Permata Biru	\N	ACTIVE	\N	0.00	0	2026-01-31 17:11:36	2026-05-04 11:01:46
+36	1	kiki	0812354568798	\N	\N	\N	ACTIVE	\N	0.00	0	2026-05-04 11:02:34	2026-05-04 11:02:34
+37	1	lala	084564878889	\N	taman indah cileunyi	\N	ACTIVE	\N	0.00	0	2026-05-04 11:06:27	2026-05-04 11:06:27
 \.
 
 
@@ -2479,6 +2740,9 @@ COPY "public"."customers" ("id", "cabang_id", "nama", "phone", "email", "alamat"
 
 COPY "public"."deliveries" ("id", "order_id", "assigned_to", "type", "status", "pickup_address", "delivery_address", "pickup_lat", "pickup_lng", "delivery_lat", "delivery_lng", "requested_at", "completed_at", "created_at", "updated_at", "sj_number", "sj_issued_at") FROM stdin;
 1	5	4	DELIVERY	DELIVERED	\N	\N	\N	\N	\N	\N	2026-01-31 22:31:43	2026-01-31 22:32:04	2026-01-31 22:31:43	2026-01-31 22:32:04	\N	\N
+2	46	4	DELIVERY	PICKED_UP	\N	\N	\N	\N	\N	\N	2026-05-04 11:12:14	\N	2026-05-04 11:12:14	2026-05-04 11:12:32	\N	\N
+3	45	4	DELIVERY	DELIVERED	\N	\N	\N	\N	\N	\N	2026-05-04 11:23:42	2026-05-04 11:23:57	2026-05-04 11:23:42	2026-05-04 11:23:57	\N	\N
+4	11	4	DELIVERY	PICKED_UP	\N	\N	\N	\N	\N	\N	2026-05-04 11:47:22	\N	2026-05-04 11:47:22	2026-05-04 11:48:13	\N	\N
 \.
 
 
@@ -2492,6 +2756,17 @@ COPY "public"."delivery_events" ("id", "delivery_id", "status", "note", "photo_u
 3	1	PICKED_UP	\N	\N	2026-01-31 22:31:54	2026-01-31 22:31:54	2026-01-31 22:31:54
 4	1	ON_ROUTE	\N	\N	2026-01-31 22:31:59	2026-01-31 22:31:59	2026-01-31 22:31:59
 5	1	DELIVERED	\N	\N	2026-01-31 22:32:04	2026-01-31 22:32:04	2026-01-31 22:32:04
+6	2	REQUESTED	Delivery requested	\N	2026-05-04 11:12:14	2026-05-04 11:12:14	2026-05-04 11:12:14
+7	2	ASSIGNED	Assigned to user #4	\N	2026-05-04 11:12:21	2026-05-04 11:12:21	2026-05-04 11:12:21
+8	2	PICKED_UP	\N	\N	2026-05-04 11:12:32	2026-05-04 11:12:32	2026-05-04 11:12:32
+9	3	REQUESTED	Delivery requested	\N	2026-05-04 11:23:42	2026-05-04 11:23:42	2026-05-04 11:23:42
+10	3	ASSIGNED	Assigned to user #4	\N	2026-05-04 11:23:48	2026-05-04 11:23:48	2026-05-04 11:23:48
+11	3	PICKED_UP	\N	\N	2026-05-04 11:23:54	2026-05-04 11:23:54	2026-05-04 11:23:54
+12	3	ON_ROUTE	\N	\N	2026-05-04 11:23:56	2026-05-04 11:23:56	2026-05-04 11:23:56
+13	3	DELIVERED	\N	\N	2026-05-04 11:23:57	2026-05-04 11:23:57	2026-05-04 11:23:57
+14	4	REQUESTED	Delivery requested	\N	2026-05-04 11:47:22	2026-05-04 11:47:22	2026-05-04 11:47:22
+15	4	ASSIGNED	Assigned to user #4	\N	2026-05-04 11:47:50	2026-05-04 11:47:50	2026-05-04 11:47:50
+16	4	PICKED_UP	\N	\N	2026-05-04 11:48:13	2026-05-04 11:48:13	2026-05-04 11:48:13
 \.
 
 
@@ -2516,6 +2791,7 @@ COPY "public"."fee_entries" ("id", "fee_id", "cabang_id", "period_date", "ref_ty
 --
 
 COPY "public"."fees" ("id", "cabang_id", "name", "kind", "calc_type", "rate", "base", "is_active", "created_by", "updated_by", "created_at", "updated_at") FROM stdin;
+1	1	Fee Kurir	COURIER	FIXED	5000.00	DELIVERY	t	2	2	2026-05-04 11:23:20	2026-05-04 11:23:20
 \.
 
 
@@ -2565,8 +2841,11 @@ COPY "public"."journal_entries" ("id", "cabang_id", "journal_date", "number", "d
 7	1	2026-01-31	PAY-PRM-1769876475-C1-7	Pembayaran Order PRM-1769876475-C1 (CASH)	POSTED	2026	1	2026-01-31 23:21:15	2026-02-01 00:50:46
 8	1	2026-01-31	PAY-PRM-1769876632-C1-8	Pembayaran Order PRM-1769876632-C1 (CASH)	POSTED	2026	1	2026-01-31 23:24:10	2026-02-01 00:50:46
 9	1	2026-01-31	PAY-PRM-1769878478-C1-9	Pembayaran Order PRM-1769878478-C1 (CASH)	POSTED	2026	1	2026-01-31 23:54:50	2026-02-01 00:50:46
-11	1	2026-02-01	CASH-MOVE-2	Cash move #2 (Kasir → Bank)	DRAFT	2026	2	2026-02-01 02:57:20	2026-02-01 02:57:20
-12	1	2026-02-01	PAY-PRM-1769890188-C1-11	Pembayaran Order PRM-1769890188-C1 (CASH)	DRAFT	2026	2	2026-02-01 03:09:48	2026-02-01 03:09:48
+46	1	2026-05-04	PAY-PRM-1777861821-C1-45	Pembayaran Order PRM-1777861821-C1 (CASH)	DRAFT	2026	5	2026-05-04 09:30:21	2026-05-04 09:30:21
+47	1	2026-05-04	PAY-PRM-1777861821-C1-46	Pembayaran Order PRM-1777861821-C1 (CASH)	DRAFT	2026	5	2026-05-04 10:06:03	2026-05-04 10:06:03
+11	1	2026-02-01	CASH-MOVE-2	Cash move #2 (Kasir → Bank)	POSTED	2026	2	2026-02-01 02:57:20	2026-05-04 10:07:12
+12	1	2026-02-01	PAY-PRM-1769890188-C1-11	Pembayaran Order PRM-1769890188-C1 (CASH)	POSTED	2026	2	2026-02-01 03:09:48	2026-05-04 10:07:14
+48	1	2026-05-04	PAY-PRM-1777867559-C1-47	Pembayaran Order PRM-1777867559-C1 (CASH)	DRAFT	2026	5	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2595,6 +2874,12 @@ COPY "public"."journal_lines" ("id", "journal_id", "account_id", "cabang_id", "d
 22	11	3	1	0.00	400000.00	CASH_MOVE	2	2026-02-01 02:57:20	2026-02-01 02:57:20
 23	12	3	1	160000.00	0.00	ORDER_PAYMENT	11	2026-02-01 03:09:48	2026-02-01 03:09:48
 24	12	13	1	0.00	160000.00	ORDER_PAYMENT	11	2026-02-01 03:09:48	2026-02-01 03:09:48
+58	46	3	1	10000.00	0.00	ORDER_PAYMENT	45	2026-05-04 09:30:21	2026-05-04 09:30:21
+59	46	13	1	0.00	10000.00	ORDER_PAYMENT	45	2026-05-04 09:30:21	2026-05-04 09:30:21
+60	47	3	1	10000.00	0.00	ORDER_PAYMENT	46	2026-05-04 10:06:03	2026-05-04 10:06:03
+61	47	13	1	0.00	10000.00	ORDER_PAYMENT	46	2026-05-04 10:06:03	2026-05-04 10:06:03
+62	48	3	1	20000.00	0.00	ORDER_PAYMENT	47	2026-05-04 11:05:59	2026-05-04 11:05:59
+63	48	13	1	0.00	20000.00	ORDER_PAYMENT	47	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2695,6 +2980,19 @@ COPY "public"."order_change_logs" ("id", "order_id", "actor_id", "action", "diff
 18	10	2	REPRINT	{"format":58}	\N	2026-02-01 00:50:10+07	2026-02-01 00:50:10+07	2026-02-01 00:50:10+07
 19	11	2	REPRINT	{"format":58}	\N	2026-02-01 03:09:48+07	2026-02-01 03:09:48+07	2026-02-01 03:09:48+07
 20	11	2	REPRINT	{"format":58}	\N	2026-02-01 03:09:48+07	2026-02-01 03:09:48+07	2026-02-01 03:09:48+07
+52	45	2	REPRINT	{"format":58}	\N	2026-05-04 09:30:21+07	2026-05-04 09:30:21+07	2026-05-04 09:30:21+07
+53	45	2	REPRINT	{"format":58}	\N	2026-05-04 09:30:21+07	2026-05-04 09:30:21+07	2026-05-04 09:30:21+07
+54	46	2	REPRINT	{"format":58}	\N	2026-05-04 11:05:59+07	2026-05-04 11:05:59+07	2026-05-04 11:05:59+07
+55	46	2	REPRINT	{"format":58}	\N	2026-05-04 11:05:59+07	2026-05-04 11:05:59+07	2026-05-04 11:05:59+07
+56	46	2	SET_CASH_POSITION	{"before":"CASHIER","after":"ADMIN"}	\N	2026-05-04 11:07:07+07	2026-05-04 11:07:07+07	2026-05-04 11:07:07+07
+57	45	2	SET_CASH_POSITION	{"before":"CASHIER","after":"ADMIN"}	\N	2026-05-04 11:07:08+07	2026-05-04 11:07:08+07	2026-05-04 11:07:08+07
+58	45	2	SET_CASH_POSITION	{"before":"ADMIN","after":"CASHIER"}	\N	2026-05-04 11:07:18+07	2026-05-04 11:07:18+07	2026-05-04 11:07:18+07
+59	46	2	SET_CASH_POSITION	{"before":"ADMIN","after":"SALES"}	\N	2026-05-04 11:07:20+07	2026-05-04 11:07:20+07	2026-05-04 11:07:20+07
+60	46	2	SET_CASH_POSITION	{"before":"SALES","after":"CASHIER"}	\N	2026-05-04 11:07:21+07	2026-05-04 11:07:21+07	2026-05-04 11:07:21+07
+61	46	2	SET_CASH_POSITION	{"before":"CASHIER","after":"ADMIN"}	\N	2026-05-04 11:10:56+07	2026-05-04 11:10:56+07	2026-05-04 11:10:56+07
+62	46	2	SET_CASH_POSITION	{"before":"ADMIN","after":"CUSTOMER"}	\N	2026-05-04 11:11:02+07	2026-05-04 11:11:02+07	2026-05-04 11:11:02+07
+63	46	2	SET_CASH_POSITION	{"before":"CUSTOMER","after":"CASHIER"}	\N	2026-05-04 11:11:03+07	2026-05-04 11:11:03+07	2026-05-04 11:11:03+07
+64	46	2	SET_CASH_POSITION	{"before":"CASHIER","after":"ADMIN"}	\N	2026-05-04 11:11:46+07	2026-05-04 11:11:46+07	2026-05-04 11:11:46+07
 \.
 
 
@@ -2712,6 +3010,8 @@ COPY "public"."order_item_lot_allocations" ("id", "order_item_id", "stock_lot_id
 7	9	2	2	\N	2026-01-31 23:54:50	2026-01-31 23:54:50
 8	10	2	3	\N	2026-02-01 00:50:10	2026-02-01 00:50:10
 9	11	3	1	\N	2026-02-01 03:09:48	2026-02-01 03:09:48
+42	46	4	1	\N	2026-05-04 10:06:03	2026-05-04 10:06:03
+43	47	4	1	\N	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2729,6 +3029,8 @@ COPY "public"."order_items" ("id", "order_id", "variant_id", "name_snapshot", "p
 9	9	9	Kastangel - 	80000.00	0.00	2.00	160000.00	2026-01-31 23:54:38	2026-01-31 23:54:38
 10	10	9	Kastangel - 	80000.00	0.00	3.00	240000.00	2026-02-01 00:50:10	2026-02-01 00:50:10
 11	11	4	Kastangel - 	160000.00	0.00	1.00	160000.00	2026-02-01 03:09:48	2026-02-01 03:09:48
+46	45	10	Macha Latte - 	20000.00	0.00	1.00	20000.00	2026-05-04 09:30:21	2026-05-04 09:30:21
+47	46	10	Macha Latte - 	20000.00	0.00	1.00	20000.00	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2744,8 +3046,10 @@ COPY "public"."orders" ("id", "kode", "cabang_id", "gudang_id", "cashier_id", "c
 7	PRM-1769876475-C1	1	1	3	1	PAID	160000.00	0.00	0.00	0.00	160000.00	160000.00	POS	\N	2026-01-31 23:21:15	2026-01-31 23:21:15	2026-01-31 23:21:15	2026-01-31 23:21:15+07	Galuh	081214695222	\N	CASHIER
 8	PRM-1769876632-C1	1	1	3	\N	PAID	80000.00	0.00	0.00	0.00	80000.00	80000.00	POS	\N	2026-01-31 23:23:52	2026-01-31 23:23:52	2026-01-31 23:24:10	2026-01-31 23:24:10+07	\N	\N	\N	CASHIER
 9	PRM-1769878478-C1	1	1	3	1	PAID	160000.00	0.00	0.00	0.00	160000.00	160000.00	POS	\N	2026-01-31 23:54:38	2026-01-31 23:54:38	2026-01-31 23:54:50	2026-01-31 23:54:50+07	Galuh	081214695222	\N	CASHIER
+45	PRM-1777861821-C1	1	1	2	1	PAID	20000.00	0.00	0.00	0.00	20000.00	20000.00	POS	\N	2026-05-04 09:30:21	2026-05-04 09:30:21	2026-05-04 11:07:18	2026-05-04 10:06:03+07	Galuh	081214695222	\N	CASHIER
 10	PRM-1769881810-C1	1	1	2	1	PAID	240000.00	0.00	0.00	0.00	240000.00	240000.00	POS	\N	2026-02-01 00:50:10	2026-02-01 00:50:10	2026-02-01 00:50:10	2026-02-01 00:50:10+07	Galuh	081214695222	\N	CASHIER
 11	PRM-1769890188-C1	1	1	2	2	PAID	160000.00	0.00	0.00	0.00	160000.00	160000.00	POS	\N	2026-02-01 03:09:48	2026-02-01 03:09:48	2026-02-01 03:09:48	2026-02-01 03:09:48+07	Irfan	082119664428	\N	CASHIER
+46	PRM-1777867559-C1	1	1	2	\N	PAID	20000.00	0.00	0.00	0.00	20000.00	20000.00	POS	\N	2026-05-04 11:05:59	2026-05-04 11:05:59	2026-05-04 11:11:46	2026-05-04 11:05:59+07	\N	\N	\N	ADMIN
 \.
 
 
@@ -2763,6 +3067,9 @@ COPY "public"."payments" ("id", "order_id", "method", "amount", "status", "ref_n
 9	9	CASH	160000.00	SUCCESS	\N	{"holder_id":1,"collected_at":"2026-01-31T16:54:49.990Z"}	2026-01-31 23:54:50	2026-01-31 23:54:50	2026-01-31 23:54:50
 10	10	CASH	240000.00	SUCCESS	\N	{"holder_id":1}	2026-02-01 00:50:10	2026-02-01 00:50:10	2026-02-01 00:50:10
 11	11	CASH	160000.00	SUCCESS	\N	{"holder_id":1}	2026-02-01 03:09:48	2026-02-01 03:09:48	2026-02-01 03:09:48
+45	45	CASH	10000.00	SUCCESS	\N	{"holder_id":1}	2026-05-04 09:30:21	2026-05-04 09:30:21	2026-05-04 09:30:21
+46	45	CASH	10000.00	SUCCESS	\N	{"holder_id":1,"collected_by":"CASHIER","collected_at":"2026-05-04T03:06:03.657Z"}	2026-05-04 10:06:03	2026-05-04 10:06:03	2026-05-04 10:06:03
+47	46	CASH	20000.00	SUCCESS	\N	{"holder_id":1}	2026-05-04 11:05:59	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2779,6 +3086,9 @@ COPY "public"."permissions" ("id", "name", "guard_name", "created_at", "updated_
 --
 
 COPY "public"."personal_access_tokens" ("id", "tokenable_type", "tokenable_id", "name", "token", "abilities", "last_used_at", "expires_at", "created_at", "updated_at") FROM stdin;
+42	App\\Models\\User	4	api	fd65dc7480cff85c24a8941eecec157d6be9e492b2e43774a3b9923a2183a639	["*"]	2026-05-04 11:48:17	\N	2026-05-04 11:47:58	2026-05-04 11:48:17
+26	App\\Models\\User	1	api	8062ecb54436b744670b09bb889f995886c5bbb6b5b4b93970bb9a3c5af54f25	["*"]	2026-04-11 12:18:50	\N	2026-04-11 10:53:18	2026-04-11 12:18:50
+27	App\\Models\\User	1	api	938cf16ca47fb5eed913c7e535432bad63e49723fe03d23f5e1f57c9df70e6c3	["*"]	\N	\N	2026-04-11 12:18:55	2026-04-11 12:18:55
 \.
 
 
@@ -2788,6 +3098,7 @@ COPY "public"."personal_access_tokens" ("id", "tokenable_type", "tokenable_id", 
 
 COPY "public"."product_media" ("id", "product_id", "disk", "path", "mime", "size_kb", "is_primary", "sort_order", "created_at", "updated_at") FROM stdin;
 2	2	public	products/2/D3ob00Rytsk1lJ3sxMt1nhzqQvON9tWXSLzXtx7m.png	image/png	890	t	0	2026-01-31 17:09:45	2026-01-31 17:09:45
+3	6	public	products/6/B9zA0bTus3CP7S1LTp4E069iViKlGm93sZrQTBol.jpg	image/jpeg	53	t	0	2026-05-04 09:26:11	2026-05-04 09:26:11
 \.
 
 
@@ -2801,6 +3112,7 @@ COPY "public"."product_variants" ("id", "product_id", "size", "type", "tester", 
 7	4	BIG	\N	\N	F-3	160000.00	t	2026-01-31 16:17:37	2026-01-31 16:17:37
 8	5	BIG	\N	\N	F-4	160000.00	t	2026-01-31 16:17:55	2026-01-31 16:17:55
 9	2	SMALL	\N	\N	F0-1	80000.00	t	2026-01-31 19:43:07	2026-01-31 19:43:07
+10	6	M	\N	\N	MT-01	20000.00	t	2026-05-04 09:24:40	2026-05-04 09:24:40
 \.
 
 
@@ -2813,6 +3125,7 @@ COPY "public"."products" ("id", "category_id", "nama", "slug", "deskripsi", "is_
 3	8	Nastar Keju	nastar-keju	\N	t	2026-01-31 16:16:36	2026-01-31 16:16:36
 4	8	Salju + Mete	salju-mete	\N	t	2026-01-31 16:16:52	2026-01-31 16:16:52
 5	8	Keranjang Cokelat	keranjang-cokelat	\N	t	2026-01-31 16:16:59	2026-01-31 16:16:59
+6	10	Macha Latte	macha-latte	\N	t	2026-05-04 09:23:41	2026-05-04 09:23:41
 \.
 
 
@@ -2839,6 +3152,10 @@ COPY "public"."receipts" ("id", "order_id", "print_format", "html_snapshot", "wa
 16	10	58	<!doctype html><html><head><meta charset="utf-8"><style>\n*{box-sizing:border-box}\nbody{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0;padding:0;color:#111}\n.wrap{width:58mm;max-width:58mm;margin:0 auto;padding:6px}\nh1,h2,h3,p{margin:0;padding:0}\n.center{text-align:center}\n.right{text-align:right}\n.muted{color:#555}\n.row{display:flex;justify-content:space-between;gap:8px}\n.hr{border-top:1px dashed #333;margin:6px 0}\ntable{width:100%;border-collapse:collapse}\ntd{vertical-align:top;padding:2px 0}\n.small{font-size:11px}\n.tot td{padding-top:4px}\n.tot .lbl{width:60%}\n.tot .val{width:40%;text-align:right}\n</style></head>\n<body onload="setTimeout(()=>{window.print&&window.print()},10)">\n  <div class="wrap">\n    <div class="center">\n      <h2>POS PRIME</h2>\n      <div class="small muted">Cabang Pusat • Gudang Utama</div>\n      <div class="small">No: <b>PRM-1769881810-C1</b> • 2026-02-01 00:50</div>\n      <div class="small">Kasir: Admin 1</div>\n      <div class="hr"></div>\n    </div>\n\n    <table><tr><td colspan='2'>Kastangel - </td></tr><tr><td class='small'>3 x 80000.00</td><td class='right'>240000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <table class="tot"><tr><td class="lbl">Subtotal</td><td class="val">240000.00</td></tr><tr><td class="lbl">Discount</td><td class="val">0.00</td></tr><tr><td class="lbl">Service</td><td class="val">0.00</td></tr><tr><td class="lbl">Tax</td><td class="val">0.00</td></tr><tr><td class="lbl"><b>Grand Total</b></td><td class="val"><b>240000.00</b></td></tr><tr><td class="lbl">Paid</td><td class="val">240000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <div class="center small">Status: <b>PAID</b></div>\n    <div class="center small muted">Terima kasih 🙏</div>\n  </div>\n</body></html>	\N	2	2026-02-01 00:50:10+07	\N	2026-02-01 00:50:10	2026-02-01 00:50:10
 17	11	58	<!doctype html><html><head><meta charset="utf-8"><style>\n*{box-sizing:border-box}\nbody{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0;padding:0;color:#111}\n.wrap{width:58mm;max-width:58mm;margin:0 auto;padding:6px}\nh1,h2,h3,p{margin:0;padding:0}\n.center{text-align:center}\n.right{text-align:right}\n.muted{color:#555}\n.row{display:flex;justify-content:space-between;gap:8px}\n.hr{border-top:1px dashed #333;margin:6px 0}\ntable{width:100%;border-collapse:collapse}\ntd{vertical-align:top;padding:2px 0}\n.small{font-size:11px}\n.tot td{padding-top:4px}\n.tot .lbl{width:60%}\n.tot .val{width:40%;text-align:right}\n</style></head>\n<body onload="setTimeout(()=>{window.print&&window.print()},10)">\n  <div class="wrap">\n    <div class="center">\n      <h2>POS PRIME</h2>\n      <div class="small muted">Cabang Pusat • Gudang Utama</div>\n      <div class="small">No: <b>PRM-1769890188-C1</b> • 2026-02-01 03:09</div>\n      <div class="small">Kasir: Admin 1</div>\n      <div class="hr"></div>\n    </div>\n\n    <table><tr><td colspan='2'>Kastangel - </td></tr><tr><td class='small'>1 x 160000.00</td><td class='right'>160000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <table class="tot"><tr><td class="lbl">Subtotal</td><td class="val">160000.00</td></tr><tr><td class="lbl">Discount</td><td class="val">0.00</td></tr><tr><td class="lbl">Service</td><td class="val">0.00</td></tr><tr><td class="lbl">Tax</td><td class="val">0.00</td></tr><tr><td class="lbl"><b>Grand Total</b></td><td class="val"><b>160000.00</b></td></tr><tr><td class="lbl">Paid</td><td class="val">160000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <div class="center small">Status: <b>PAID</b></div>\n    <div class="center small muted">Terima kasih 🙏</div>\n  </div>\n</body></html>	\N	2	2026-02-01 03:09:48+07	\N	2026-02-01 03:09:48	2026-02-01 03:09:48
 18	11	58	<!doctype html><html><head><meta charset="utf-8"><style>\n*{box-sizing:border-box}\nbody{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0;padding:0;color:#111}\n.wrap{width:58mm;max-width:58mm;margin:0 auto;padding:6px}\nh1,h2,h3,p{margin:0;padding:0}\n.center{text-align:center}\n.right{text-align:right}\n.muted{color:#555}\n.row{display:flex;justify-content:space-between;gap:8px}\n.hr{border-top:1px dashed #333;margin:6px 0}\ntable{width:100%;border-collapse:collapse}\ntd{vertical-align:top;padding:2px 0}\n.small{font-size:11px}\n.tot td{padding-top:4px}\n.tot .lbl{width:60%}\n.tot .val{width:40%;text-align:right}\n</style></head>\n<body onload="setTimeout(()=>{window.print&&window.print()},10)">\n  <div class="wrap">\n    <div class="center">\n      <h2>POS PRIME</h2>\n      <div class="small muted">Cabang Pusat • Gudang Utama</div>\n      <div class="small">No: <b>PRM-1769890188-C1</b> • 2026-02-01 03:09</div>\n      <div class="small">Kasir: Admin 1</div>\n      <div class="hr"></div>\n    </div>\n\n    <table><tr><td colspan='2'>Kastangel - </td></tr><tr><td class='small'>1 x 160000.00</td><td class='right'>160000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <table class="tot"><tr><td class="lbl">Subtotal</td><td class="val">160000.00</td></tr><tr><td class="lbl">Discount</td><td class="val">0.00</td></tr><tr><td class="lbl">Service</td><td class="val">0.00</td></tr><tr><td class="lbl">Tax</td><td class="val">0.00</td></tr><tr><td class="lbl"><b>Grand Total</b></td><td class="val"><b>160000.00</b></td></tr><tr><td class="lbl">Paid</td><td class="val">160000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <div class="center small">Status: <b>PAID</b></div>\n    <div class="center small muted">Terima kasih 🙏</div>\n  </div>\n</body></html>	\N	2	2026-02-01 03:09:48+07	\N	2026-02-01 03:09:48	2026-02-01 03:09:48
+50	45	58	<!doctype html><html><head><meta charset="utf-8"><style>\n*{box-sizing:border-box}\nbody{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0;padding:0;color:#111}\n.wrap{width:58mm;max-width:58mm;margin:0 auto;padding:6px}\nh1,h2,h3,p{margin:0;padding:0}\n.center{text-align:center}\n.right{text-align:right}\n.muted{color:#555}\n.row{display:flex;justify-content:space-between;gap:8px}\n.hr{border-top:1px dashed #333;margin:6px 0}\ntable{width:100%;border-collapse:collapse}\ntd{vertical-align:top;padding:2px 0}\n.small{font-size:11px}\n.tot td{padding-top:4px}\n.tot .lbl{width:60%}\n.tot .val{width:40%;text-align:right}\n</style></head>\n<body onload="setTimeout(()=>{window.print&&window.print()},10)">\n  <div class="wrap">\n    <div class="center">\n      <h2>POS PRIME</h2>\n      <div class="small muted">Cabang Pusat • Gudang Utama</div>\n      <div class="small">No: <b>PRM-1777861821-C1</b> • 2026-05-04 09:30</div>\n      <div class="small">Kasir: Admin 1</div>\n      <div class="hr"></div>\n    </div>\n\n    <table><tr><td colspan='2'>Macha Latte - </td></tr><tr><td class='small'>1 x 20000.00</td><td class='right'>20000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <table class="tot"><tr><td class="lbl">Subtotal</td><td class="val">20000.00</td></tr><tr><td class="lbl">Discount</td><td class="val">0.00</td></tr><tr><td class="lbl">Service</td><td class="val">0.00</td></tr><tr><td class="lbl">Tax</td><td class="val">0.00</td></tr><tr><td class="lbl"><b>Grand Total</b></td><td class="val"><b>20000.00</b></td></tr><tr><td class="lbl">Paid</td><td class="val">10000.00</td></tr><tr><td class="lbl"><b>Sisa Bayar</b></td><td class="val"><b>10000.00</b></td></tr><tr><td class="lbl small muted">DP</td><td class="val small muted">10000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <div class="center small">Status: <b>UNPAID</b></div>\n    <div class="center small muted">Terima kasih 🙏</div>\n  </div>\n</body></html>	\N	2	2026-05-04 09:30:21+07	\N	2026-05-04 09:30:21	2026-05-04 09:30:21
+51	45	58	<!doctype html><html><head><meta charset="utf-8"><style>\n*{box-sizing:border-box}\nbody{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0;padding:0;color:#111}\n.wrap{width:58mm;max-width:58mm;margin:0 auto;padding:6px}\nh1,h2,h3,p{margin:0;padding:0}\n.center{text-align:center}\n.right{text-align:right}\n.muted{color:#555}\n.row{display:flex;justify-content:space-between;gap:8px}\n.hr{border-top:1px dashed #333;margin:6px 0}\ntable{width:100%;border-collapse:collapse}\ntd{vertical-align:top;padding:2px 0}\n.small{font-size:11px}\n.tot td{padding-top:4px}\n.tot .lbl{width:60%}\n.tot .val{width:40%;text-align:right}\n</style></head>\n<body onload="setTimeout(()=>{window.print&&window.print()},10)">\n  <div class="wrap">\n    <div class="center">\n      <h2>POS PRIME</h2>\n      <div class="small muted">Cabang Pusat • Gudang Utama</div>\n      <div class="small">No: <b>PRM-1777861821-C1</b> • 2026-05-04 09:30</div>\n      <div class="small">Kasir: Admin 1</div>\n      <div class="hr"></div>\n    </div>\n\n    <table><tr><td colspan='2'>Macha Latte - </td></tr><tr><td class='small'>1 x 20000.00</td><td class='right'>20000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <table class="tot"><tr><td class="lbl">Subtotal</td><td class="val">20000.00</td></tr><tr><td class="lbl">Discount</td><td class="val">0.00</td></tr><tr><td class="lbl">Service</td><td class="val">0.00</td></tr><tr><td class="lbl">Tax</td><td class="val">0.00</td></tr><tr><td class="lbl"><b>Grand Total</b></td><td class="val"><b>20000.00</b></td></tr><tr><td class="lbl">Paid</td><td class="val">10000.00</td></tr><tr><td class="lbl"><b>Sisa Bayar</b></td><td class="val"><b>10000.00</b></td></tr><tr><td class="lbl small muted">DP</td><td class="val small muted">10000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <div class="center small">Status: <b>UNPAID</b></div>\n    <div class="center small muted">Terima kasih 🙏</div>\n  </div>\n</body></html>	\N	2	2026-05-04 09:30:21+07	\N	2026-05-04 09:30:21	2026-05-04 09:30:21
+52	46	58	<!doctype html><html><head><meta charset="utf-8"><style>\n*{box-sizing:border-box}\nbody{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0;padding:0;color:#111}\n.wrap{width:58mm;max-width:58mm;margin:0 auto;padding:6px}\nh1,h2,h3,p{margin:0;padding:0}\n.center{text-align:center}\n.right{text-align:right}\n.muted{color:#555}\n.row{display:flex;justify-content:space-between;gap:8px}\n.hr{border-top:1px dashed #333;margin:6px 0}\ntable{width:100%;border-collapse:collapse}\ntd{vertical-align:top;padding:2px 0}\n.small{font-size:11px}\n.tot td{padding-top:4px}\n.tot .lbl{width:60%}\n.tot .val{width:40%;text-align:right}\n</style></head>\n<body onload="setTimeout(()=>{window.print&&window.print()},10)">\n  <div class="wrap">\n    <div class="center">\n      <h2>POS PRIME</h2>\n      <div class="small muted">Cabang Pusat • Gudang Utama</div>\n      <div class="small">No: <b>PRM-1777867559-C1</b> • 2026-05-04 11:05</div>\n      <div class="small">Kasir: Admin 1</div>\n      <div class="hr"></div>\n    </div>\n\n    <table><tr><td colspan='2'>Macha Latte - </td></tr><tr><td class='small'>1 x 20000.00</td><td class='right'>20000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <table class="tot"><tr><td class="lbl">Subtotal</td><td class="val">20000.00</td></tr><tr><td class="lbl">Discount</td><td class="val">0.00</td></tr><tr><td class="lbl">Service</td><td class="val">0.00</td></tr><tr><td class="lbl">Tax</td><td class="val">0.00</td></tr><tr><td class="lbl"><b>Grand Total</b></td><td class="val"><b>20000.00</b></td></tr><tr><td class="lbl">Paid</td><td class="val">20000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <div class="center small">Status: <b>PAID</b></div>\n    <div class="center small muted">Terima kasih 🙏</div>\n  </div>\n</body></html>	\N	2	2026-05-04 11:05:59+07	\N	2026-05-04 11:05:59	2026-05-04 11:05:59
+53	46	58	<!doctype html><html><head><meta charset="utf-8"><style>\n*{box-sizing:border-box}\nbody{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0;padding:0;color:#111}\n.wrap{width:58mm;max-width:58mm;margin:0 auto;padding:6px}\nh1,h2,h3,p{margin:0;padding:0}\n.center{text-align:center}\n.right{text-align:right}\n.muted{color:#555}\n.row{display:flex;justify-content:space-between;gap:8px}\n.hr{border-top:1px dashed #333;margin:6px 0}\ntable{width:100%;border-collapse:collapse}\ntd{vertical-align:top;padding:2px 0}\n.small{font-size:11px}\n.tot td{padding-top:4px}\n.tot .lbl{width:60%}\n.tot .val{width:40%;text-align:right}\n</style></head>\n<body onload="setTimeout(()=>{window.print&&window.print()},10)">\n  <div class="wrap">\n    <div class="center">\n      <h2>POS PRIME</h2>\n      <div class="small muted">Cabang Pusat • Gudang Utama</div>\n      <div class="small">No: <b>PRM-1777867559-C1</b> • 2026-05-04 11:05</div>\n      <div class="small">Kasir: Admin 1</div>\n      <div class="hr"></div>\n    </div>\n\n    <table><tr><td colspan='2'>Macha Latte - </td></tr><tr><td class='small'>1 x 20000.00</td><td class='right'>20000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <table class="tot"><tr><td class="lbl">Subtotal</td><td class="val">20000.00</td></tr><tr><td class="lbl">Discount</td><td class="val">0.00</td></tr><tr><td class="lbl">Service</td><td class="val">0.00</td></tr><tr><td class="lbl">Tax</td><td class="val">0.00</td></tr><tr><td class="lbl"><b>Grand Total</b></td><td class="val"><b>20000.00</b></td></tr><tr><td class="lbl">Paid</td><td class="val">20000.00</td></tr></table>\n    <div class="hr"></div>\n\n    <div class="center small">Status: <b>PAID</b></div>\n    <div class="center small muted">Terima kasih 🙏</div>\n  </div>\n</body></html>	\N	2	2026-05-04 11:05:59+07	\N	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2886,6 +3203,7 @@ COPY "public"."stock_lots" ("id", "cabang_id", "gudang_id", "product_variant_id"
 1	1	1	4	LOT-20260131-F1-0132	2026-01-31 00:00:00	\N	2	0	\N	2026-01-31 16:35:26	2026-01-31 17:13:02
 2	1	1	9	LOT-20260131-F01-0020	2026-01-31 00:00:00	\N	12	0	\N	2026-01-31 22:28:58	2026-02-01 00:50:10
 3	1	1	4	LOT-20260131-F1-6696	2026-01-31 00:00:00	\N	10	9	\N	2026-01-31 22:29:34	2026-02-01 03:09:48
+4	1	1	10	LOT-20260504-MT01-2343	2026-05-04 00:00:00	\N	15	13	\N	2026-05-04 09:28:36	2026-05-04 11:05:59
 \.
 
 
@@ -2906,6 +3224,9 @@ COPY "public"."stock_movements" ("id", "cabang_id", "gudang_id", "product_varian
 10	1	1	9	2	OUT	-2	\N	SALE	9	SALE#PRM-1769878478-C1	2026-01-31 23:54:50	2026-01-31 23:54:50
 11	1	1	9	2	OUT	-3	\N	SALE	10	SALE#PRM-1769881810-C1	2026-02-01 00:50:10	2026-02-01 00:50:10
 12	1	1	4	3	OUT	-1	\N	SALE	11	SALE#PRM-1769890188-C1	2026-02-01 03:09:48	2026-02-01 03:09:48
+45	1	1	10	4	IN	15	\N	PURCHASE	\N	RECEIVE	2026-05-04 09:28:36	2026-05-04 09:28:36
+46	1	1	10	4	OUT	-1	\N	SALE	46	SALE#PRM-1777861821-C1	2026-05-04 10:06:03	2026-05-04 10:06:03
+47	1	1	10	4	OUT	-1	\N	SALE	47	SALE#PRM-1777867559-C1	2026-05-04 11:05:59	2026-05-04 11:05:59
 \.
 
 
@@ -2929,6 +3250,7 @@ COPY "public"."variant_stocks" ("id", "cabang_id", "gudang_id", "product_variant
 2	1	1	6	10	12	2026-01-31 16:36:56	2026-01-31 16:37:02	\N	\N	\N
 3	1	1	9	12	10	2026-01-31 19:43:31	2026-02-01 00:50:10	\N	\N	\N
 1	1	1	4	19	12	2026-01-31 16:32:51	2026-02-01 03:09:48	\N	\N	\N
+4	1	1	10	13	10	2026-05-04 09:26:57	2026-05-04 11:05:59	\N	\N	\N
 \.
 
 
@@ -2943,7 +3265,7 @@ SELECT pg_catalog.setval('"public"."accounts_id_seq"', 20, true);
 -- Name: audit_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."audit_logs_id_seq"', 510, true);
+SELECT pg_catalog.setval('"public"."audit_logs_id_seq"', 775, true);
 
 
 --
@@ -2985,42 +3307,42 @@ SELECT pg_catalog.setval('"public"."cash_sessions_id_seq"', 2, true);
 -- Name: cash_transactions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."cash_transactions_id_seq"', 43, true);
+SELECT pg_catalog.setval('"public"."cash_transactions_id_seq"', 47, true);
 
 
 --
 -- Name: categories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."categories_id_seq"', 9, true);
+SELECT pg_catalog.setval('"public"."categories_id_seq"', 10, true);
 
 
 --
 -- Name: customer_timelines_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."customer_timelines_id_seq"', 34, true);
+SELECT pg_catalog.setval('"public"."customer_timelines_id_seq"', 37, true);
 
 
 --
 -- Name: customers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."customers_id_seq"', 34, true);
+SELECT pg_catalog.setval('"public"."customers_id_seq"', 37, true);
 
 
 --
 -- Name: deliveries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."deliveries_id_seq"', 1, true);
+SELECT pg_catalog.setval('"public"."deliveries_id_seq"', 4, true);
 
 
 --
 -- Name: delivery_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."delivery_events_id_seq"', 5, true);
+SELECT pg_catalog.setval('"public"."delivery_events_id_seq"', 16, true);
 
 
 --
@@ -3041,7 +3363,7 @@ SELECT pg_catalog.setval('"public"."fee_entries_id_seq"', 1, false);
 -- Name: fees_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."fees_id_seq"', 1, false);
+SELECT pg_catalog.setval('"public"."fees_id_seq"', 1, true);
 
 
 --
@@ -3069,14 +3391,14 @@ SELECT pg_catalog.setval('"public"."jobs_id_seq"', 1, false);
 -- Name: journal_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."journal_entries_id_seq"', 44, true);
+SELECT pg_catalog.setval('"public"."journal_entries_id_seq"', 48, true);
 
 
 --
 -- Name: journal_lines_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."journal_lines_id_seq"', 55, true);
+SELECT pg_catalog.setval('"public"."journal_lines_id_seq"', 63, true);
 
 
 --
@@ -3090,35 +3412,35 @@ SELECT pg_catalog.setval('"public"."migrations_id_seq"', 44, true);
 -- Name: order_change_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."order_change_logs_id_seq"', 51, true);
+SELECT pg_catalog.setval('"public"."order_change_logs_id_seq"', 64, true);
 
 
 --
 -- Name: order_item_lot_allocations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."order_item_lot_allocations_id_seq"', 41, true);
+SELECT pg_catalog.setval('"public"."order_item_lot_allocations_id_seq"', 43, true);
 
 
 --
 -- Name: order_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."order_items_id_seq"', 43, true);
+SELECT pg_catalog.setval('"public"."order_items_id_seq"', 47, true);
 
 
 --
 -- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."orders_id_seq"', 43, true);
+SELECT pg_catalog.setval('"public"."orders_id_seq"', 46, true);
 
 
 --
 -- Name: payments_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."payments_id_seq"', 43, true);
+SELECT pg_catalog.setval('"public"."payments_id_seq"', 47, true);
 
 
 --
@@ -3132,35 +3454,35 @@ SELECT pg_catalog.setval('"public"."permissions_id_seq"', 1, false);
 -- Name: personal_access_tokens_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."personal_access_tokens_id_seq"', 24, true);
+SELECT pg_catalog.setval('"public"."personal_access_tokens_id_seq"', 42, true);
 
 
 --
 -- Name: product_media_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."product_media_id_seq"', 2, true);
+SELECT pg_catalog.setval('"public"."product_media_id_seq"', 3, true);
 
 
 --
 -- Name: product_variants_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."product_variants_id_seq"', 9, true);
+SELECT pg_catalog.setval('"public"."product_variants_id_seq"', 10, true);
 
 
 --
 -- Name: products_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."products_id_seq"', 5, true);
+SELECT pg_catalog.setval('"public"."products_id_seq"', 6, true);
 
 
 --
 -- Name: receipts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."receipts_id_seq"', 49, true);
+SELECT pg_catalog.setval('"public"."receipts_id_seq"', 53, true);
 
 
 --
@@ -3181,14 +3503,14 @@ SELECT pg_catalog.setval('"public"."settings_id_seq"', 6, true);
 -- Name: stock_lots_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."stock_lots_id_seq"', 3, true);
+SELECT pg_catalog.setval('"public"."stock_lots_id_seq"', 4, true);
 
 
 --
 -- Name: stock_movements_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."stock_movements_id_seq"', 44, true);
+SELECT pg_catalog.setval('"public"."stock_movements_id_seq"', 47, true);
 
 
 --
@@ -3202,7 +3524,7 @@ SELECT pg_catalog.setval('"public"."users_id_seq"', 4, true);
 -- Name: variant_stocks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('"public"."variant_stocks_id_seq"', 3, true);
+SELECT pg_catalog.setval('"public"."variant_stocks_id_seq"', 4, true);
 
 
 --
@@ -4560,5 +4882,5 @@ ALTER TABLE ONLY "public"."variant_stocks"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict qbvVKm9L1mgd4XmixRWgKQM7hi7m0pGk2GwHyU5BO75wOc2Eeh5VauJxPj0UPGg
+\unrestrict I9mhW57a7e7oTySr8Se5pK6avPEFb5dTYA3hvOMpKkJ22aiVEvZnvHjsqhfpPZN
 

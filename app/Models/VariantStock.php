@@ -1,7 +1,7 @@
 <?php
-
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class VariantStock extends Model
@@ -12,14 +12,34 @@ class VariantStock extends Model
         'product_variant_id',
         'qty',
         'min_stok',
+        'safety_stock',
+        'lead_time_days',
+        'reorder_point',
     ];
 
     protected $casts = [
-        'qty' => 'integer',
-        'min_stok' => 'integer',
+        'cabang_id'          => 'integer',
+        'gudang_id'          => 'integer',
+        'product_variant_id' => 'integer',
+        'qty'                => 'integer',
+        'min_stok'           => 'integer',
+        'safety_stock'       => 'integer',
+        'lead_time_days'     => 'integer',
+        'reorder_point'      => 'integer',
     ];
 
-    // RELATIONS
+    protected $appends = [
+        'is_low_stock',
+        'reorder_point_eff',
+        'is_below_rop',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
+
     public function cabang()
     {
         return $this->belongsTo(Cabang::class, 'cabang_id');
@@ -35,34 +55,83 @@ class VariantStock extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
-    // SCOPES
-    public function scopeOfCabang($q, $cabangId)
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeOfCabang(Builder $query, int $cabangId): Builder
     {
-        return $q->where('cabang_id', $cabangId);
+        return $query->where('cabang_id', $cabangId);
     }
 
-    public function scopeLowStock($q)
+    public function scopeOfGudang(Builder $query, int $gudangId): Builder
     {
-        return $q->whereColumn('qty', '<', 'min_stok');
+        return $query->where('gudang_id', $gudangId);
     }
+
+    public function scopeLowStock(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('min_stok')
+            ->whereColumn('qty', '<', 'min_stok');
+    }
+
+    public function scopeBelowRop(Builder $query): Builder
+    {
+        return $query
+            ->where(function (Builder $q) {
+                $q->where(function (Builder $manual) {
+                    $manual
+                        ->whereNotNull('reorder_point')
+                        ->whereColumn('qty', '<=', 'reorder_point');
+                })
+                    ->orWhere(function (Builder $fallback) {
+                        $fallback
+                            ->whereNull('reorder_point')
+                            ->whereNotNull('min_stok')
+                            ->whereColumn('qty', '<=', 'min_stok');
+                    });
+            });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
 
     public function getIsLowStockAttribute(): bool
     {
-        return $this->qty < $this->min_stok;
+        if ($this->min_stok === null) {
+            return false;
+        }
+
+        return (int) $this->qty < (int) $this->min_stok;
     }
 
     public function getReorderPointEffAttribute(): ?int
     {
-        // Prioritas: gunakan kolom 'reorder_point' bila ada, fallback hitung dinamis
-        if (!is_null($this->reorder_point)) return (int)$this->reorder_point;
+        if ($this->reorder_point !== null) {
+            return (int) $this->reorder_point;
+        }
 
-        // Fallback kalkulasi ringan berdasar histori (lihat service di bawah)
-        return app(\App\Services\StockPlanningService::class)
-            ->estimateReorderPoint($this->gudang_id, $this->product_variant_id);
+        if ($this->min_stok !== null) {
+            return (int) $this->min_stok;
+        }
+
+        return null;
     }
 
-    public function scopeBelowRop($q)
+    public function getIsBelowRopAttribute(): bool
     {
-        return $q->whereColumn('qty', '<=', 'reorder_point');
+        $rop = $this->reorder_point_eff;
+
+        if ($rop === null) {
+            return false;
+        }
+
+        return (int) $this->qty <= (int) $rop;
     }
 }

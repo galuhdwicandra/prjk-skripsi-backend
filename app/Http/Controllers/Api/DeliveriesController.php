@@ -1,11 +1,14 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{DeliveryAssignRequest, DeliveryEventStoreRequest, DeliveryStatusRequest, DeliveryStoreRequest};
+use App\Http\Requests\DeliveryAssignRequest;
+use App\Http\Requests\DeliveryEventStoreRequest;
+use App\Http\Requests\DeliveryStatusRequest;
+use App\Http\Requests\DeliveryStoreRequest;
 use App\Http\Requests\Deliveries\SendDeliveryNoteRequest;
-use App\Models\{Delivery, Order};
+use App\Models\Delivery;
+use App\Models\Order;
 use App\Services\DeliveryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +28,7 @@ class DeliveriesController extends Controller
             ->with([
                 'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
                 'courier:id,name',
-                'events'
+                'events',
             ])
             ->when($req->filled('status'), fn($x) => $x->where('status', $req->string('status')))
             ->when($req->filled('assigned_to'), fn($x) => $x->where('assigned_to', $req->integer('assigned_to')))
@@ -48,9 +51,9 @@ class DeliveriesController extends Controller
     public function show(Request $req, int $id)
     {
         $delivery = Delivery::with([
-            'order'   => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
+            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
             'courier:id,name',
-            'events'
+            'events',
         ])->findOrFail($id);
         $this->authorize('view', $delivery);
         return response()->json($delivery);
@@ -72,7 +75,7 @@ class DeliveriesController extends Controller
             $delivery->load([
                 'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
                 'courier:id,name',
-                'events'
+                'events',
             ]);
             $delivery = $this->svc->autoAssign($delivery);
         }
@@ -94,7 +97,7 @@ class DeliveriesController extends Controller
 
         // balikan lengkap (biar FE bisa refresh tanpa call lain)
         $delivery->load([
-            'order'   => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
+            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id'),
             'courier:id,name',
             'events',
         ]);
@@ -135,9 +138,22 @@ class DeliveriesController extends Controller
     public function note(int $id)
     {
         $delivery = Delivery::with([
-            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id', 'subtotal', 'discount', 'grand_total', 'paid_total', 'status', 'created_at')
+            'order' => fn($qo) => $qo->select(
+                'id',
+                'kode',
+                'cabang_id',
+                'customer_id',
+                'customer_name',
+                'customer_phone',
+                'customer_address',
+                'subtotal',
+                'discount',
+                'grand_total',
+                'paid_total',
+                'status',
+                'created_at'
+            )
                 ->with([
-                    // ⬇⬇ perbaiki di sini
                     'items' => fn($qi) => $qi->select(
                         'id',
                         'order_id',
@@ -146,8 +162,8 @@ class DeliveriesController extends Controller
                         'price',
                         DB::raw('NULL::text AS note')
                     ),
-                    'customer:id,name,phone,address',
-                    'cabang:id,code,name,address,phone'
+                    'customer:id,nama,phone,alamat',
+                    'cabang:id,nama,alamat,telepon',
                 ]),
             'courier:id,name,phone',
         ])->findOrFail($id);
@@ -156,20 +172,34 @@ class DeliveriesController extends Controller
 
         if (is_null($delivery->assigned_to)) {
             return response()->json([
-                'message' => 'Surat Jalan tersedia setelah kurir di-assign.'
+                'message' => 'Surat Jalan tersedia setelah kurir di-assign.',
             ], 422);
         }
 
         $html = $this->svc->buildSuratJalanHtml($delivery);
+
         return response($html, 200)->header('Content-Type', 'text/html; charset=UTF-8');
     }
 
     public function sendWa(SendDeliveryNoteRequest $request, int $id)
     {
         $delivery = Delivery::with([
-            'order' => fn($qo) => $qo->select('id', DB::raw('kode as code'), 'cabang_id', 'subtotal', 'discount', 'grand_total', 'paid_total', 'status', 'created_at')
+            'order' => fn($qo) => $qo->select(
+                'id',
+                'kode',
+                'cabang_id',
+                'customer_id',
+                'customer_name',
+                'customer_phone',
+                'customer_address',
+                'subtotal',
+                'discount',
+                'grand_total',
+                'paid_total',
+                'status',
+                'created_at'
+            )
                 ->with([
-                    // ⬇⬇ perbaiki di sini
                     'items' => fn($qi) => $qi->select(
                         'id',
                         'order_id',
@@ -178,8 +208,8 @@ class DeliveriesController extends Controller
                         'price',
                         DB::raw('NULL::text AS note')
                     ),
-                    'customer:id,name,phone,address',
-                    'cabang:id,code,name,address,phone'
+                    'customer:id,nama,phone,alamat',
+                    'cabang:id,nama,alamat,telepon',
                 ]),
             'courier:id,name,phone',
         ])->findOrFail($id);
@@ -187,7 +217,7 @@ class DeliveriesController extends Controller
         $this->authorize('sendSuratJalan', $delivery);
 
         $message = $request->validated()['message'] ?? null;
-        $res = $this->svc->resendWASuratJalan($delivery, $message);
+        $res     = $this->svc->resendWASuratJalan($delivery, $message);
 
         if (empty($res['wa_url'])) {
             return response()->json($res, 422);

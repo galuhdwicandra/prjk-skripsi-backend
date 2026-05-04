@@ -15,7 +15,7 @@ class CustomerUpdateRequest extends FormRequest
     public function rules(): array
     {
         $customer = $this->route('customer');
-        $cabangId = (int)($this->user()->cabang_id);
+        $cabangId = (int)($customer->cabang_id);
 
         return [
             'nama'   => ['required', 'string', 'max:120'],

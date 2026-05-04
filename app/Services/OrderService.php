@@ -1,16 +1,15 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace App\Services;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Carbon\Carbon;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrderService
 {
@@ -19,23 +18,50 @@ class OrderService
      */
     public function list(array $filter, ?int $userCabangId = null): LengthAwarePaginator
     {
+        $keyword = $filter['q'] ?? $filter['search'] ?? null;
+
+        $sort       = $filter['sort'] ?? '-ordered_at';
+        $direction  = str_starts_with((string) $sort, '-') ? 'desc' : 'asc';
+        $sortColumn = ltrim((string) $sort, '-');
+
+        if (! in_array($sortColumn, ['ordered_at', 'kode', 'grand_total'], true)) {
+            $sortColumn = 'ordered_at';
+            $direction  = 'desc';
+        }
+
         $q = Order::query()
             ->with(['items', 'payments'])
             ->when($userCabangId, fn($qq) => $qq->where('cabang_id', $userCabangId))
             ->when($filter['cabang_id'] ?? null, fn($qq, $v) => $qq->where('cabang_id', $v))
             ->when($filter['status'] ?? null, fn($qq, $v) => $qq->where('status', $v))
+            ->when($filter['cash_position'] ?? null, fn($qq, $v) => $qq->where('cash_position', $v))
             ->when($filter['date_from'] ?? null, fn($qq, $v) => $qq->whereDate('ordered_at', '>=', $v))
             ->when($filter['date_to'] ?? null, fn($qq, $v) => $qq->whereDate('ordered_at', '<=', $v))
-            ->when($filter['search'] ?? null, function ($qq, $v) {
-                $like = "%{$v}%";
+            ->when($keyword, function ($qq, $v) {
+                $term = trim((string) $v);
+                $like = '%' . str_replace(' ', '%', $term) . '%';
+
                 $qq->where(function ($w) use ($like) {
-                    $w->where('kode', 'like', $like)
-                        ->orWhere('note', 'like', $like);
+                    $w->where('kode', 'ILIKE', $like)
+                        ->orWhere('note', 'ILIKE', $like)
+                        ->orWhere('customer_name', 'ILIKE', $like)
+                        ->orWhere('customer_phone', 'ILIKE', $like)
+                        ->orWhereHas('items', function ($item) use ($like) {
+                            $item->where('name_snapshot', 'ILIKE', $like)
+                                ->orWhereHas('variant', function ($variant) use ($like) {
+                                    $variant->where('sku', 'ILIKE', $like)
+                                        ->orWhereHas('product', function ($product) use ($like) {
+                                            $product->where('nama', 'ILIKE', $like)
+                                                ->orWhere('slug', 'ILIKE', $like);
+                                        });
+                                });
+                        });
                 });
             })
-            ->orderByDesc('ordered_at');
+            ->orderBy($sortColumn, $direction);
 
-        $perPage = (int)($filter['per_page'] ?? 10);
+        $perPage = (int) ($filter['per_page'] ?? 10);
+
         return $q->paginate($perPage);
     }
 
@@ -56,12 +82,12 @@ class OrderService
             // Upsert items
             foreach ($payload['items'] as $row) {
                 // normalize numeric fields
-                $price    = (float)($row['price'] ?? 0);
-                $discount = (float)($row['discount'] ?? 0);
-                $qty      = (float)($row['qty'] ?? 0);
+                $price    = (float) ($row['price'] ?? 0);
+                $discount = (float) ($row['discount'] ?? 0);
+                $qty      = (float) ($row['qty'] ?? 0);
                 $line     = ($price - $discount) * $qty;
 
-                if (!empty($row['id'])) {
+                if (! empty($row['id'])) {
                     // UPDATE existing row: do NOT null-out variant_id/name unless explicitly sent
                     /** @var \App\Models\OrderItem|null $existing */
                     $existing = OrderItem::where('order_id', $order->id)
@@ -77,12 +103,12 @@ class OrderService
 
                     // only set variant_id if present in payload
                     if (array_key_exists('variant_id', $row) && $row['variant_id'] !== null) {
-                        $update['variant_id'] = (int)$row['variant_id'];
+                        $update['variant_id'] = (int) $row['variant_id'];
                     }
 
                     // only set name_snapshot if provided (avoid writing empty string if your column is NOT NULL)
-                    if (isset($row['name']) && trim((string)$row['name']) !== '') {
-                        $update['name_snapshot'] = (string)$row['name'];
+                    if (isset($row['name']) && trim((string) $row['name']) !== '') {
+                        $update['name_snapshot'] = (string) $row['name'];
                     }
 
                     $existing->update($update);
@@ -95,8 +121,8 @@ class OrderService
 
                     OrderItem::create([
                         'order_id'      => $order->id,
-                        'variant_id'    => (int)$row['variant_id'],
-                        'name_snapshot' => (string)($row['name'] ?? ''), // ensure non-null; prefer real name if available
+                        'variant_id'    => (int) $row['variant_id'],
+                        'name_snapshot' => (string) ($row['name'] ?? ''), // ensure non-null; prefer real name if available
                         'price'         => $price,
                         'discount'      => $discount,
                         'qty'           => $qty,
@@ -109,9 +135,9 @@ class OrderService
             $sum = OrderItem::where('order_id', $order->id)
                 ->selectRaw('SUM(line_total) as subtotal')
                 ->first();
-            $order->subtotal = (float)($sum->subtotal ?? 0);
+            $order->subtotal = (float) ($sum->subtotal ?? 0);
             // discount/tax/service_fee dipertahankan (jika ada logic lain, atur di sini)
-            $order->grand_total = $order->subtotal - (float)$order->discount + (float)$order->tax + (float)$order->service_fee;
+            $order->grand_total = $order->subtotal - (float) $order->discount + (float) $order->tax + (float) $order->service_fee;
             $order->save();
 
             $after = $this->snapshot($order);
@@ -142,8 +168,8 @@ class OrderService
         ], $actorId);
 
         return [
-            'format' => $format,
-            'html'   => $html,
+            'format'  => $format,
+            'html'    => $html,
             'wa_link' => $this->makeWaLink($order),
         ];
     }
@@ -154,11 +180,11 @@ class OrderService
     public function resendWA(Order $order, string $phone, ?string $message, int $actorId): array
     {
         $defaultMsg = $this->defaultWaMessage($order);
-        $text = trim($message ?: $defaultMsg);
-        $wa = 'https://wa.me/' . ltrim($phone, '+0') . '?text=' . urlencode($text);
+        $text       = trim($message ?: $defaultMsg);
+        $wa         = 'https://wa.me/' . ltrim($phone, '+0') . '?text=' . urlencode($text);
 
         $this->audit('ORDER_WA_RESEND', $order, [
-            'phone' => $phone,
+            'phone'   => $phone,
             'message' => $text,
         ], $actorId);
 
@@ -179,7 +205,7 @@ class OrderService
                 'tax',
                 'service_fee',
                 'grand_total',
-                'paid_total'
+                'paid_total',
             ]),
             'items' => $o->items->map(fn($i) => Arr::only($i->toArray(), [
                 'id',
@@ -188,7 +214,7 @@ class OrderService
                 'price',
                 'discount',
                 'qty',
-                'line_total'
+                'line_total',
             ]))->all(),
         ];
     }
@@ -196,8 +222,8 @@ class OrderService
     protected function defaultWaMessage(Order $o): string
     {
         return "Terima kasih telah berbelanja.\n" .
-            "Kode: {$o->kode}\nTotal: Rp " . $this->nf($o->grand_total, 0) .
-            "\nTanggal: " . $o->ordered_at;
+        "Kode: {$o->kode}\nTotal: Rp " . $this->nf($o->grand_total, 0) .
+        "\nTanggal: " . $o->ordered_at;
     }
 
     protected function makeWaLink(Order $o): string
@@ -208,14 +234,14 @@ class OrderService
 
     private function nf($value, int $decimals = 0): string
     {
-        $n = is_numeric($value) ? (float)$value : 0.0;
+        $n = is_numeric($value) ? (float) $value : 0.0;
         return number_format($n, $decimals, ',', '.');
     }
 
     private function nfDot($value, int $decimals = 2): string
     {
         // untuk format dengan titik desimal (mis. Qty 2 desimal), lalu trim trailing .0
-        $n = is_numeric($value) ? (float)$value : 0.0;
+        $n = is_numeric($value) ? (float) $value : 0.0;
         return rtrim(rtrim(number_format($n, $decimals, '.', ''), '0'), '.');
     }
 
@@ -223,7 +249,7 @@ class OrderService
     {
         // Tabel audit_logs ada di ERD dan Flow (disarankan).
         // Jika model AuditLog sudah ada, panggil di sini. Jika belum, bisa simpan via DB::table(...).
-        if (!Schema::hasTable('audit_logs')) {
+        if (! Schema::hasTable('audit_logs')) {
             return;
         }
 
@@ -245,17 +271,17 @@ class OrderService
         $widthPx = $format === '80' ? 576 : 384;
 
         $kode   = e($order->kode);
-        $date   = e(optional($order->ordered_at)->format('Y-m-d H:i') ?? (string)$order->ordered_at);
-        $cabang = e((string)($order->cabang->nama ?? $order->cabang_id));
-        $status = e((string)$order->status);
+        $date   = e(optional($order->ordered_at)->format('Y-m-d H:i') ?? (string) $order->ordered_at);
+        $cabang = e((string) ($order->cabang->nama ?? $order->cabang_id));
+        $status = e((string) $order->status);
 
         $rows = '';
         foreach ($order->items as $it) {
             $name  = e($it->name_snapshot ?: '');
-            $qty   = (float)$it->qty;            // ensure float
-            $price = (float)$it->price;          // ensure float
-            $disc  = (float)$it->discount;       // ensure float
-            $line  = (float)$it->line_total;     // ensure float
+            $qty   = (float) $it->qty;        // ensure float
+            $price = (float) $it->price;      // ensure float
+            $disc  = (float) $it->discount;   // ensure float
+            $line  = (float) $it->line_total; // ensure float
 
             $rows .= '
             <tr>
@@ -272,7 +298,7 @@ class OrderService
         $serviceFee = $this->nf($order->service_fee, 0);
         $grandTotal = $this->nf($order->grand_total, 0);
         $paidTotal  = $this->nf($order->paid_total, 0);
-        $change     = $this->nf(max(0, (float)$order->paid_total - (float)$order->grand_total), 0);
+        $change     = $this->nf(max(0, (float) $order->paid_total - (float) $order->grand_total), 0);
 
         return <<<HTML
 <!doctype html>

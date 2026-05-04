@@ -1,7 +1,7 @@
 <?php
-
 namespace App\Models;
 
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 
 class ProductVariant extends Model
@@ -17,7 +17,7 @@ class ProductVariant extends Model
     ];
 
     protected $casts = [
-        'harga' => 'decimal:2',
+        'harga'     => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
@@ -26,10 +26,12 @@ class ProductVariant extends Model
         return $this->belongsTo(Product::class);
     }
 
-    // Placeholder relasi stok per gudang (M5)
-    // public function stocks() { ... }
+    public function stocks()
+    {
+        return $this->hasMany(\App\Models\VariantStock::class, 'product_variant_id');
+    }
 
-    /** Scope aktif */
+/** Scope aktif */
     public function scopeActive($q)
     {
         return $q->where('is_active', true);

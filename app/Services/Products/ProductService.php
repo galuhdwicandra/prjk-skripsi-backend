@@ -1,17 +1,19 @@
 <?php
-
 namespace App\Services\Products;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Collection;
 
 class ProductService
 {
-    public function list(?string $search = null, int $perPage = 24, ?bool $onlyActive = true)
-    {
+    public function list(
+        ?string $search = null,
+        int $perPage = 24,
+        ?bool $onlyActive = true,
+        ?int $gudangId = null
+    ) {
         return Product::query()
             ->when($onlyActive, fn($q) => $q->active())
             ->withCount('variants')
@@ -19,7 +21,36 @@ class ProductService
                 ['variants as min_variant_harga' => fn($q) => $q->where('is_active', true)],
                 'harga'
             )
-            ->with(['primaryMedia:id,product_id,path,is_primary,sort_order'])
+            ->with([
+                'primaryMedia:id,product_id,path,is_primary,sort_order',
+                'variants' => function ($q) use ($gudangId) {
+                    $q->select(
+                        'id',
+                        'product_id',
+                        'size',
+                        'type',
+                        'tester',
+                        'sku',
+                        'harga',
+                        'is_active',
+                        'created_at',
+                        'updated_at'
+                    )
+                        ->where('is_active', true)
+                        ->orderBy('id');
+
+                    if ($gudangId) {
+                        $q->withSum([
+                            'stocks as stock_qty' => fn($stock) => $stock->where('gudang_id', $gudangId),
+                        ], 'qty');
+                    }
+                },
+            ])
+            ->when($gudangId, function ($q) use ($gudangId) {
+                $q->whereHas('variants.stocks', function ($stock) use ($gudangId) {
+                    $stock->where('gudang_id', $gudangId);
+                });
+            })
             ->search($search)
             ->orderByDesc('id')
             ->paginate($perPage);
@@ -41,7 +72,7 @@ class ProductService
             ]);
 
             // optional initial variants
-            if (!empty($data['variants']) && is_array($data['variants'])) {
+            if (! empty($data['variants']) && is_array($data['variants'])) {
                 foreach ($data['variants'] as $v) {
                     $this->createVariant($product, $v);
                 }
@@ -54,7 +85,7 @@ class ProductService
     public function update(Product $product, array $data): Product
     {
         return DB::transaction(function () use ($product, $data) {
-            if (isset($data['nama']) && !isset($data['slug'])) {
+            if (isset($data['nama']) && ! isset($data['slug'])) {
                 // regenerate slug only if not explicitly provided
                 $data['slug'] = $this->ensureUniqueSlug(Str::slug($data['nama']), $product->id);
             } elseif (isset($data['slug'])) {
@@ -80,12 +111,12 @@ class ProductService
         $sku = $data['sku'] ?? $this->generateSku($product, $data);
         return ProductVariant::create([
             'product_id' => $product->id,
-            'size'   => $data['size']   ?? null,
-            'type'   => $data['type']   ?? null,
-            'tester' => $data['tester'] ?? null,
-            'harga'  => $data['harga'],
-            'sku'    => $this->ensureUniqueSku($sku),
-            'is_active' => $data['is_active'] ?? true,
+            'size'       => $data['size'] ?? null,
+            'type'       => $data['type'] ?? null,
+            'tester'     => $data['tester'] ?? null,
+            'harga'      => $data['harga'],
+            'sku'        => $this->ensureUniqueSku($sku),
+            'is_active'  => $data['is_active'] ?? true,
         ]);
     }
 
@@ -111,7 +142,7 @@ class ProductService
     {
         $slug = Str::slug($base) ?: Str::random(6);
         $try  = $slug;
-        $i = 1;
+        $i    = 1;
         while (Product::where('slug', $try)->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))->exists()) {
             $try = $slug . '-' . $i++;
         }
@@ -120,11 +151,11 @@ class ProductService
 
     private function generateSku(Product $product, array $data): string
     {
-        $code = strtoupper(Str::slug(substr($product->nama, 0, 12), ''));
+        $code  = strtoupper(Str::slug(substr($product->nama, 0, 12), ''));
         $parts = [
-            strtoupper(substr((string)($data['size'] ?? ''), 0, 3)),
-            strtoupper(substr((string)($data['type'] ?? ''), 0, 3)),
-            strtoupper(substr((string)($data['tester'] ?? ''), 0, 3)),
+            strtoupper(substr((string) ($data['size'] ?? ''), 0, 3)),
+            strtoupper(substr((string) ($data['type'] ?? ''), 0, 3)),
+            strtoupper(substr((string) ($data['tester'] ?? ''), 0, 3)),
         ];
         $base = $code . '-' . implode('', array_filter($parts));
         return $base ?: 'SKU-' . Str::upper(Str::random(6));
@@ -132,9 +163,9 @@ class ProductService
 
     private function ensureUniqueSku(string $base, ?int $ignoreId = null): string
     {
-        $sku = preg_replace('/\s+/', '', strtoupper($base)) ?: 'SKU-' . Str::upper(Str::random(6));
-        $try = $sku;
-        $i = 1;
+        $sku   = preg_replace('/\s+/', '', strtoupper($base)) ?: 'SKU-' . Str::upper(Str::random(6));
+        $try   = $sku;
+        $i     = 1;
         $query = fn($t) => ProductVariant::where('sku', $t)
             ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId));
         while ($query($try)->exists()) {

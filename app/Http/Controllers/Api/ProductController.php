@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -11,7 +10,8 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function __construct(private ProductService $svc) {}
+    public function __construct(private ProductService $svc)
+    {}
 
     public function index(Request $request)
     {
@@ -21,7 +21,9 @@ class ProductController extends Controller
 
         $items = $this->svc->list(
             search: $term,
-            perPage: (int) $request->query('per_page', 24)
+            perPage: (int) $request->query('per_page', 24),
+            onlyActive: true,
+            gudangId: $request->filled('gudang_id') ? (int) $request->integer('gudang_id') : null
         );
 
         return response()->json($items);
@@ -35,7 +37,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product created',
-            'data' => $product,
+            'data'    => $product,
         ], 201);
     }
 
@@ -56,7 +58,7 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product updated',
-            'data' => $updated,
+            'data'    => $updated,
         ]);
     }
 
