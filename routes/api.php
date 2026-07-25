@@ -98,9 +98,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/stock-lots', [StockLotController::class, 'index']);
         Route::post('/stock-lots', [StockLotController::class, 'store']);
         Route::get('/stocks/{stock}', [VariantStockController::class, 'show']);
-        Route::post('/stocks', [VariantStockController::class, 'store']);                 // set stok awal / upsert
         Route::patch('/stocks/{stock}', [VariantStockController::class, 'update']);       // update min_stok
-        Route::post('/stocks/{stock}/adjust', [VariantStockController::class, 'adjust']); // adjust +/-
         Route::delete('/stocks/{stock}', [VariantStockController::class, 'destroy']);     // hard delete
 
         // POS — Orders
